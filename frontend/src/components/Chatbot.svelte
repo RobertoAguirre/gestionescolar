@@ -5,15 +5,121 @@
   let inputMessage = '';
   let isLoading = false;
   let showCitaForm = false;
+  let modoAccesible = false;
+  let textoSimplificado = false;
+  let lecturaPantalla = false;
+  let respuestasCortas = false;
+  let alumnoSeleccionado = '';
+  let perfilAccesibilidad = null;
   let fileInput;
   let history = [];
+  let maestros = [];
+  let alumnos = [];
+  let maestroSelect;
+  let tipoCitaSelect;
+  let showMaestroSelect = false;
+  let showEncuestaForm = false;
+  let encuestaTipo = 'chatbot';
+  let encuestaCalificacion = 5;
+  let encuestaComentarios = '';
+  let encuestaNombre = '';
+  let encuestaEmail = '';
 
-  onMount(() => {
+  onMount(async () => {
     messages = [{
       role: 'assistant',
       content: '¡Hola! Soy tu asistente virtual. Puedo ayudarte con horarios, eventos, desempeño escolar, planes de pago y más. ¿En qué puedo ayudarte?'
     }];
+    await loadMaestrosYAlumnos();
   });
+
+  async function enviarEncuesta() {
+    if (!encuestaCalificacion) {
+      alert('Por favor selecciona una calificación');
+      return;
+    }
+    
+    try {
+      const res = await fetch('/api/encuestas/satisfaccion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo: encuestaTipo,
+          calificacion: encuestaCalificacion,
+          comentarios: encuestaComentarios,
+          nombre: encuestaNombre,
+          email: encuestaEmail
+        })
+      });
+      
+      if (res.ok) {
+        alert('¡Gracias por tu feedback!');
+        showEncuestaForm = false;
+        encuestaCalificacion = 5;
+        encuestaComentarios = '';
+        encuestaNombre = '';
+        encuestaEmail = '';
+      } else {
+        alert('Error enviando encuesta');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error enviando encuesta');
+    }
+  }
+
+  async function loadMaestrosYAlumnos() {
+    try {
+      const [maestrosRes, alumnosRes] = await Promise.all([
+        fetch('/api/maestros'),
+        fetch('/api/alumnos')
+      ]);
+      maestros = await maestrosRes.json();
+      alumnos = await alumnosRes.json();
+      
+      // Cargar perfil de accesibilidad si hay un alumno seleccionado
+      if (alumnoSeleccionado) {
+        await cargarPerfilAccesibilidad(alumnoSeleccionado);
+      }
+    } catch (error) {
+      console.error('Error cargando datos:', error);
+    }
+  }
+
+  async function cargarPerfilAccesibilidad(alumnoId) {
+    try {
+      const response = await fetch(`/api/admin/accesibilidad/${alumnoId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.perfilAccesibilidad) {
+          perfilAccesibilidad = data.perfilAccesibilidad;
+          modoAccesible = perfilAccesibilidad.modoAccesible || false;
+          textoSimplificado = perfilAccesibilidad.textoSimplificado || false;
+          lecturaPantalla = perfilAccesibilidad.lecturaPantalla || false;
+          respuestasCortas = perfilAccesibilidad.respuestasCortas || false;
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando perfil de accesibilidad:', error);
+    }
+  }
+
+  function handleAlumnoChange() {
+    if (alumnoSeleccionado) {
+      cargarPerfilAccesibilidad(alumnoSeleccionado);
+    } else {
+      // Resetear perfil si no hay alumno seleccionado
+      modoAccesible = false;
+      textoSimplificado = false;
+      lecturaPantalla = false;
+      respuestasCortas = false;
+      perfilAccesibilidad = null;
+    }
+  }
 
   async function sendMessage() {
     if (!inputMessage.trim() || isLoading) return;
@@ -26,12 +132,22 @@
     isLoading = true;
 
     try {
+      // Construir perfil de accesibilidad
+      const perfilAccesibilidad = {
+        modoAccesible: modoAccesible,
+        textoSimplificado: textoSimplificado,
+        lecturaPantalla: lecturaPantalla,
+        respuestasCortas: respuestasCortas
+      };
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           message: currentInput,
-          history: history.slice(-10) // Últimos 10 mensajes
+          history: history.slice(-10), // Últimos 10 mensajes
+          alumnoId: alumnoSeleccionado || null,
+          perfilAccesibilidad: Object.values(perfilAccesibilidad).some(v => v) ? perfilAccesibilidad : null
         })
       });
 
@@ -68,6 +184,20 @@
     const formData = new FormData();
     formData.append('image', file);
     formData.append('message', 'Analiza este recibo de pago o documento escolar');
+    
+    // Agregar perfil de accesibilidad si está activo
+    const perfilAccesibilidad = {
+      modoAccesible: modoAccesible,
+      textoSimplificado: textoSimplificado,
+      lecturaPantalla: lecturaPantalla,
+      respuestasCortas: respuestasCortas
+    };
+    if (Object.values(perfilAccesibilidad).some(v => v)) {
+      formData.append('perfilAccesibilidad', JSON.stringify(perfilAccesibilidad));
+    }
+    if (alumnoSeleccionado) {
+      formData.append('alumnoId', alumnoSeleccionado);
+    }
 
     try {
       const response = await fetch('/api/chat/image', {
@@ -96,13 +226,59 @@
     event.preventDefault();
     const formData = new FormData(event.target);
     
+    const nombre = formData.get('nombre');
+    const email = formData.get('email');
+    const fecha = formData.get('fecha');
+    const tipo = formData.get('tipo');
+    const maestroId = formData.get('maestroId');
+    const alumnoId = formData.get('alumnoId');
+    
+    if (!nombre || !nombre.trim()) {
+      alert('El nombre es requerido');
+      return;
+    }
+    
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      alert('El email es requerido y debe ser válido');
+      return;
+    }
+    
+    if (!fecha) {
+      alert('La fecha es requerida');
+      return;
+    }
+    
+    try {
+      const fechaObj = new Date(fecha);
+      if (isNaN(fechaObj.getTime())) {
+        alert('La fecha no es válida');
+        return;
+      }
+      if (fechaObj < new Date()) {
+        alert('La fecha no puede ser en el pasado');
+        return;
+      }
+    } catch (error) {
+      alert('Error validando la fecha');
+      return;
+    }
+    
+    if (tipo === 'maestro') {
+      if (!maestroId || !maestroId.trim()) {
+        alert('Debes seleccionar un maestro');
+        return;
+      }
+    }
+    
     const citaData = {
-      nombre: formData.get('nombre'),
-      email: formData.get('email'),
-      telefono: formData.get('telefono'),
-      motivo: formData.get('motivo'),
-      fecha: formData.get('fecha'),
-      tipo: formData.get('tipo')
+      nombre: nombre.trim(),
+      email: email.trim(),
+      telefono: formData.get('telefono') || '',
+      motivo: formData.get('motivo') || '',
+      fecha,
+      tipo,
+      maestroId: (tipo === 'maestro' && maestroId) ? maestroId : null,
+      alumnoId: (alumnoId && alumnoId.trim()) ? alumnoId : null
     };
 
     try {
@@ -116,14 +292,26 @@
       if (data.success) {
         messages = [...messages, {
           role: 'assistant',
-          content: `✅ Cita agendada exitosamente para ${citaData.fecha}. Te contactaremos pronto.`
+          content: `✅ Cita agendada exitosamente para ${new Date(citaData.fecha).toLocaleString('es-ES')}. Te contactaremos pronto.`
         }];
         showCitaForm = false;
+        showMaestroSelect = false;
         event.target.reset();
+        if (maestroSelect) maestroSelect.value = '';
+      } else {
+        alert(data.error || 'Error agendando la cita');
       }
     } catch (error) {
       console.error('Error:', error);
       alert('Error agendando la cita');
+    }
+  }
+
+  function handleTipoChange(event) {
+    const tipo = event.target.value;
+    showMaestroSelect = tipo === 'maestro';
+    if (tipo !== 'maestro' && maestroSelect) {
+      maestroSelect.value = '';
     }
   }
 
@@ -138,6 +326,38 @@
 <div class="chatbot-container">
   <div class="chatbot-header">
     <h1>💬 Asistente Escolar</h1>
+  </div>
+  
+  <!-- Panel de accesibilidad -->
+  <div class="accesibilidad-panel">
+    <h3>⚙️ Configuración de Accesibilidad</h3>
+    <div class="accesibilidad-controls">
+      <label>
+        <input type="checkbox" bind:checked={modoAccesible} />
+        Modo Accesible
+      </label>
+      <label>
+        <input type="checkbox" bind:checked={textoSimplificado} />
+        Texto Simplificado
+      </label>
+      <label>
+        <input type="checkbox" bind:checked={lecturaPantalla} />
+        Soporte Lectura de Pantalla
+      </label>
+      <label>
+        <input type="checkbox" bind:checked={respuestasCortas} />
+        Respuestas Cortas
+      </label>
+    </div>
+    <div class="alumno-selector">
+      <label>Seleccionar alumno (para cargar perfil automático):</label>
+      <select bind:value={alumnoSeleccionado} on:change={handleAlumnoChange}>
+        <option value="">Sin alumno específico</option>
+        {#each alumnos as a}
+          <option value={String(a._id)}>{a.nombre}</option>
+        {/each}
+      </select>
+    </div>
   </div>
 
   <div class="messages-container">
@@ -164,10 +384,24 @@
         <input type="text" name="nombre" placeholder="Nombre completo" required />
         <input type="email" name="email" placeholder="Email" required />
         <input type="tel" name="telefono" placeholder="Teléfono" />
-        <select name="tipo" required>
+        <select name="tipo" bind:this={tipoCitaSelect} required on:change={handleTipoChange}>
           <option value="">Selecciona tipo</option>
           <option value="directivo">Directivo</option>
-          <option value="profesor">Profesor</option>
+          <option value="maestro">Maestro</option>
+        </select>
+        {#if showMaestroSelect}
+          <select name="maestroId" bind:this={maestroSelect} required>
+            <option value="">Selecciona un maestro</option>
+            {#each maestros as m}
+              <option value={String(m._id)}>{m.nombre} {m.especialidad ? `- ${m.especialidad}` : ''}</option>
+            {/each}
+          </select>
+        {/if}
+        <select name="alumnoId">
+          <option value="">Selecciona un alumno (opcional)</option>
+          {#each alumnos as a}
+            <option value={String(a._id)}>{a.nombre}</option>
+          {/each}
         </select>
         <input type="datetime-local" name="fecha" required />
         <textarea name="motivo" placeholder="Motivo de la cita" required></textarea>
@@ -175,9 +409,54 @@
           <button type="submit">Agendar</button>
           <button type="button" on:click={() => showCitaForm = false}>Cancelar</button>
         </div>
+    </form>
+  </div>
+{/if}
+
+{#if showEncuestaForm}
+  <div class="modal">
+    <div class="modal-content">
+      <h3>⭐ Encuesta de Satisfacción</h3>
+      <p>¿Cómo calificarías tu experiencia con el chatbot?</p>
+      <form on:submit|preventDefault={enviarEncuesta}>
+        <label>
+          Tipo de evaluación:
+          <select bind:value={encuestaTipo}>
+            <option value="chatbot">Chatbot</option>
+            <option value="comunicacion">Comunicación</option>
+            <option value="sistema">Sistema General</option>
+          </select>
+        </label>
+        <label>
+          Calificación (1-5 estrellas):
+          <select bind:value={encuestaCalificacion}>
+            <option value={1}>1 ⭐</option>
+            <option value={2}>2 ⭐⭐</option>
+            <option value={3}>3 ⭐⭐⭐</option>
+            <option value={4}>4 ⭐⭐⭐⭐</option>
+            <option value={5}>5 ⭐⭐⭐⭐⭐</option>
+          </select>
+        </label>
+        <label>
+          Comentarios (opcional):
+          <textarea bind:value={encuestaComentarios} rows="3" placeholder="Tu opinión nos ayuda a mejorar..."></textarea>
+        </label>
+        <label>
+          Nombre (opcional):
+          <input type="text" bind:value={encuestaNombre} />
+        </label>
+        <label>
+          Email (opcional):
+          <input type="email" bind:value={encuestaEmail} />
+        </label>
+        <div class="modal-actions">
+          <button type="submit">Enviar</button>
+          <button type="button" on:click={() => showEncuestaForm = false}>Cancelar</button>
+        </div>
       </form>
     </div>
-  {/if}
+  </div>
+{/if}
 
   <div class="input-container">
     <input
@@ -201,10 +480,68 @@
     <button on:click={sendMessage} disabled={isLoading || !inputMessage.trim()}>
       ➤
     </button>
+    <button class="feedback-button" on:click={() => showEncuestaForm = true} title="Dar feedback">
+      ⭐
+    </button>
   </div>
 </div>
 
 <style>
+  .accesibilidad-panel {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px;
+    border: 2px solid #e9ecef;
+  }
+
+  .accesibilidad-panel h3 {
+    margin: 0 0 15px 0;
+    font-size: 1rem;
+    color: #495057;
+  }
+
+  .accesibilidad-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .accesibilidad-controls label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .accesibilidad-controls input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+
+  .alumno-selector {
+    margin-top: 10px;
+  }
+
+  .alumno-selector label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #495057;
+  }
+
+  .alumno-selector select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+
   .chatbot-container {
     background: white;
     border-radius: 20px;
@@ -327,6 +664,8 @@
     border: 1px solid #ddd;
     border-radius: 8px;
     font-size: 14px;
+    width: 100%;
+    margin-bottom: 10px;
   }
 
   .cita-form textarea {
@@ -414,6 +753,24 @@
   .input-container button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .feedback-button {
+    background: #ffc107;
+    color: #333;
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    border: none;
+  }
+
+  .feedback-button:hover {
+    background: #ffb300;
   }
 </style>
 
