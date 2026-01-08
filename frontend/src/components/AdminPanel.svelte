@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { API_URL } from '../config.js';
   
   let isAuthenticated = false;
   let password = '';
@@ -118,7 +119,7 @@
 
   async function checkSuperAdmin() {
     try {
-      const res = await fetch('/api/super-admin/escuelas', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/super-admin/escuelas', { headers: getAuthHeaders() });
       if (res.ok) {
         escuelas = await res.json();
         isSuperAdmin = true;
@@ -136,7 +137,7 @@
 
   async function login() {
     try {
-      const response = await fetch('/api/admin/login', {
+      const response = await fetch(`${API_URL}/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password })
@@ -201,7 +202,7 @@
 
   async function loadStats() {
     try {
-      const res = await fetch('/api/admin/stats', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/stats', { headers: getAuthHeaders() });
       stats = await res.json();
     } catch (error) {
       console.error('Error cargando estadísticas:', error);
@@ -210,7 +211,7 @@
 
   async function loadHorarios() {
     try {
-      const res = await fetch('/api/admin/horarios', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/horarios', { headers: getAuthHeaders() });
       horarios = await res.json();
     } catch (error) {
       console.error('Error cargando horarios:', error);
@@ -219,7 +220,7 @@
 
   async function loadEventos() {
     try {
-      const res = await fetch('/api/admin/eventos', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/eventos', { headers: getAuthHeaders() });
       eventos = await res.json();
     } catch (error) {
       console.error('Error cargando eventos:', error);
@@ -228,7 +229,7 @@
 
   async function loadPlanes() {
     try {
-      const res = await fetch('/api/admin/planes', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/planes', { headers: getAuthHeaders() });
       planes = await res.json();
     } catch (error) {
       console.error('Error cargando planes:', error);
@@ -237,7 +238,7 @@
 
   async function loadCitas() {
     try {
-      const res = await fetch('/api/admin/citas', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/citas', { headers: getAuthHeaders() });
       citas = await res.json();
     } catch (error) {
       console.error('Error cargando citas:', error);
@@ -246,7 +247,7 @@
 
   async function loadInformacion() {
     try {
-      const res = await fetch('/api/admin/informacion', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/informacion', { headers: getAuthHeaders() });
       informacion = await res.json();
     } catch (error) {
       console.error('Error cargando información:', error);
@@ -266,8 +267,8 @@
     
     try {
       const url = editingHorario 
-        ? `/api/admin/horarios/${editingHorario._id}`
-        : '/api/admin/horarios';
+        ? `${API_URL}/api/admin/horarios/${editingHorario._id}`
+        : `${API_URL}/api/admin/horarios`;
       const method = editingHorario ? 'PUT' : 'POST';
       
       const response = await fetch(url, {
@@ -297,7 +298,7 @@
   async function deleteHorario(id) {
     if (!confirm('¿Eliminar este horario?')) return;
     try {
-      await fetch(`/api/admin/horarios/${id}`, {
+      await fetch(`${API_URL}/api/admin/horarios/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -311,8 +312,8 @@
   async function saveEvento() {
     try {
       const url = editingEvento 
-        ? `/api/admin/eventos/${editingEvento._id}`
-        : '/api/admin/eventos';
+        ? `${API_URL}/api/admin/eventos/${editingEvento._id}`
+        : `${API_URL}/api/admin/eventos`;
       const method = editingEvento ? 'PUT' : 'POST';
       
       await fetch(url, {
@@ -338,7 +339,7 @@
   async function deleteEvento(id) {
     if (!confirm('¿Eliminar este evento?')) return;
     try {
-      await fetch(`/api/admin/eventos/${id}`, {
+      await fetch(`${API_URL}/api/admin/eventos/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -352,8 +353,8 @@
   async function savePlan() {
     try {
       const url = editingPlan 
-        ? `/api/admin/planes/${editingPlan._id}`
-        : '/api/admin/planes';
+        ? `${API_URL}/api/admin/planes/${editingPlan._id}`
+        : `${API_URL}/api/admin/planes`;
       const method = editingPlan ? 'PUT' : 'POST';
       
       await fetch(url, {
@@ -378,7 +379,7 @@
   async function deletePlan(id) {
     if (!confirm('¿Eliminar este plan?')) return;
     try {
-      await fetch(`/api/admin/planes/${id}`, {
+      await fetch(`${API_URL}/api/admin/planes/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -391,7 +392,7 @@
   // Información
   async function saveInformacion() {
     try {
-      await fetch('/api/admin/informacion', {
+      await fetch(`${API_URL}/api/admin/informacion', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ contenido: informacion.contenido })
@@ -405,7 +406,7 @@
   // Maestros
   async function loadMaestros() {
     try {
-      const res = await fetch('/api/admin/maestros', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/maestros', { headers: getAuthHeaders() });
       maestros = await res.json();
     } catch (error) {
       console.error('Error cargando maestros:', error);
@@ -425,8 +426,8 @@
     
     try {
       const url = editingMaestro 
-        ? `/api/admin/maestros/${editingMaestro._id}`
-        : '/api/admin/maestros';
+        ? `${API_URL}/api/admin/maestros/${editingMaestro._id}`
+        : `${API_URL}/api/admin/maestros`;
       const method = editingMaestro ? 'PUT' : 'POST';
       
       const response = await fetch(url, {
@@ -457,7 +458,7 @@
   async function deleteMaestro(id) {
     if (!confirm('¿Eliminar este maestro?')) return;
     try {
-      await fetch(`/api/admin/maestros/${id}`, {
+      await fetch(`${API_URL}/api/admin/maestros/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -471,7 +472,7 @@
   // Alumnos
   async function loadAlumnos() {
     try {
-      const res = await fetch('/api/admin/alumnos', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/alumnos', { headers: getAuthHeaders() });
       alumnos = await res.json();
     } catch (error) {
       console.error('Error cargando alumnos:', error);
@@ -491,8 +492,8 @@
     
     try {
       const url = editingAlumno 
-        ? `/api/admin/alumnos/${editingAlumno._id}`
-        : '/api/admin/alumnos';
+        ? `${API_URL}/api/admin/alumnos/${editingAlumno._id}`
+        : `${API_URL}/api/admin/alumnos`;
       const method = editingAlumno ? 'PUT' : 'POST';
       
       const data = { ...newAlumno };
@@ -532,7 +533,7 @@
   async function deleteAlumno(id) {
     if (!confirm('¿Eliminar este alumno?')) return;
     try {
-      await fetch(`/api/admin/alumnos/${id}`, {
+      await fetch(`${API_URL}/api/admin/alumnos/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -546,7 +547,7 @@
   // Espacios
   async function loadEspacios() {
     try {
-      const res = await fetch('/api/admin/espacios', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/espacios', { headers: getAuthHeaders() });
       espacios = await res.json();
     } catch (error) {
       console.error('Error cargando espacios:', error);
@@ -571,8 +572,8 @@
     
     try {
       const url = editingEspacio 
-        ? `/api/admin/espacios/${editingEspacio._id}`
-        : '/api/admin/espacios';
+        ? `${API_URL}/api/admin/espacios/${editingEspacio._id}`
+        : `${API_URL}/api/admin/espacios`;
       const method = editingEspacio ? 'PUT' : 'POST';
       
       const response = await fetch(url, {
@@ -602,7 +603,7 @@
   async function deleteEspacio(id) {
     if (!confirm('¿Eliminar este espacio?')) return;
     try {
-      await fetch(`/api/admin/espacios/${id}`, {
+      await fetch(`${API_URL}/api/admin/espacios/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -615,7 +616,7 @@
   // Grupos
   async function loadGrupos() {
     try {
-      const res = await fetch('/api/admin/grupos', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/grupos', { headers: getAuthHeaders() });
       grupos = await res.json();
     } catch (error) {
       console.error('Error cargando grupos:', error);
@@ -630,8 +631,8 @@
     
     try {
       const url = editingGrupo 
-        ? `/api/admin/grupos/${editingGrupo._id}`
-        : '/api/admin/grupos';
+        ? `${API_URL}/api/admin/grupos/${editingGrupo._id}`
+        : `${API_URL}/api/admin/grupos`;
       const method = editingGrupo ? 'PUT' : 'POST';
       
       const data = { ...newGrupo };
@@ -666,7 +667,7 @@
   async function deleteGrupo(id) {
     if (!confirm('¿Eliminar este grupo?')) return;
     try {
-      await fetch(`/api/admin/grupos/${id}`, {
+      await fetch(`${API_URL}/api/admin/grupos/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -680,7 +681,7 @@
   // Citas
   async function updateCitaEstado(id, estado) {
     try {
-      await fetch(`/api/admin/citas/${id}`, {
+      await fetch(`${API_URL}/api/admin/citas/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ estado })
@@ -695,7 +696,7 @@
   // Calificaciones
   async function loadCalificaciones() {
     try {
-      const res = await fetch('/api/admin/calificaciones', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/calificaciones', { headers: getAuthHeaders() });
       calificaciones = await res.json();
     } catch (error) {
       console.error('Error cargando calificaciones:', error);
@@ -704,7 +705,7 @@
 
   async function loadAlertas() {
     try {
-      const res = await fetch('/api/admin/calificaciones/alertas?umbral=70', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/calificaciones/alertas?umbral=70', { headers: getAuthHeaders() });
       const data = await res.json();
       alertas = data.alertas || [];
     } catch (error) {
@@ -728,8 +729,8 @@
     
     try {
       const url = editingCalificacion 
-        ? `/api/admin/calificaciones/${editingCalificacion._id}`
-        : '/api/admin/calificaciones';
+        ? `${API_URL}/api/admin/calificaciones/${editingCalificacion._id}`
+        : `${API_URL}/api/admin/calificaciones`;
       const method = editingCalificacion ? 'PUT' : 'POST';
       
       const data = { ...newCalificacion };
@@ -771,7 +772,7 @@
   async function deleteCalificacion(id) {
     if (!confirm('¿Eliminar esta calificación?')) return;
     try {
-      await fetch(`/api/admin/calificaciones/${id}`, {
+      await fetch(`${API_URL}/api/admin/calificaciones/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -784,7 +785,7 @@
 
   async function verPromedios(alumnoId) {
     try {
-      const res = await fetch(`/api/admin/calificaciones/promedios/${alumnoId}`, { 
+      const res = await fetch(`${API_URL}/api/admin/calificaciones/promedios/${alumnoId}`, { 
         headers: getAuthHeaders() 
       });
       const data = await res.json();
@@ -800,7 +801,7 @@
 
   async function verHistorialAcademico(alumnoId) {
     try {
-      const res = await fetch(`/api/admin/calificaciones/historial/${alumnoId}`, { 
+      const res = await fetch(`${API_URL}/api/admin/calificaciones/historial/${alumnoId}`, { 
         headers: getAuthHeaders() 
       });
       const data = await res.json();
@@ -816,7 +817,7 @@
 
   async function verRecomendaciones(alumnoId) {
     try {
-      const res = await fetch(`/api/admin/calificaciones/recomendaciones/${alumnoId}`, { 
+      const res = await fetch(`${API_URL}/api/admin/calificaciones/recomendaciones/${alumnoId}`, { 
         headers: getAuthHeaders() 
       });
       const data = await res.json();
@@ -837,7 +838,7 @@
   // Asistencia
   async function loadAsistencia() {
     try {
-      const res = await fetch('/api/admin/asistencia', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/asistencia', { headers: getAuthHeaders() });
       asistencia = await res.json();
     } catch (error) {
       console.error('Error cargando asistencia:', error);
@@ -846,7 +847,7 @@
 
   async function loadAlertasAusentismo() {
     try {
-      const res = await fetch('/api/admin/asistencia/alertas?umbral=80', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/asistencia/alertas?umbral=80', { headers: getAuthHeaders() });
       const data = await res.json();
       alertasAusentismo = data.alertas || [];
     } catch (error) {
@@ -857,8 +858,8 @@
   async function saveAsistencia() {
     try {
       const url = editingAsistencia 
-        ? `/api/admin/asistencia/${editingAsistencia._id}`
-        : '/api/admin/asistencia';
+        ? `${API_URL}/api/admin/asistencia/${editingAsistencia._id}`
+        : `${API_URL}/api/admin/asistencia`;
       const method = editingAsistencia ? 'PUT' : 'POST';
       
       const res = await fetch(url, {
@@ -897,7 +898,7 @@
   async function deleteAsistencia(id) {
     if (!confirm('¿Eliminar este registro de asistencia?')) return;
     try {
-      const res = await fetch(`/api/admin/asistencia/${id}`, {
+      const res = await fetch(`${API_URL}/api/admin/asistencia/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -914,7 +915,7 @@
 
   async function verEstadisticasAlumno(alumnoId) {
     try {
-      const res = await fetch(`/api/admin/asistencia/estadisticas/${alumnoId}`, { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/asistencia/estadisticas/${alumnoId}`, { headers: getAuthHeaders() });
       if (res.ok) {
         estadisticasAsistencia = await res.json();
       }
@@ -937,7 +938,7 @@
       return;
     }
     try {
-      const res = await fetch(`/api/admin/asistencia/estadisticas-grupo/${grupoSeleccionadoAsistencia}`, { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/asistencia/estadisticas-grupo/${grupoSeleccionadoAsistencia}`, { headers: getAuthHeaders() });
       if (res.ok) {
         estadisticasGrupo = await res.json();
       }
@@ -953,7 +954,7 @@
       if (alumnoSeleccionadoAsistencia) params.append('alumnoId', alumnoSeleccionadoAsistencia);
       params.append('meses', '6');
       
-      const res = await fetch(`/api/admin/asistencia/tendencias?${params.toString()}`, { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/asistencia/tendencias?${params.toString()}`, { headers: getAuthHeaders() });
       if (res.ok) {
         tendenciasAsistencia = await res.json();
       }
@@ -965,7 +966,7 @@
   // Notificaciones
   async function loadNotificaciones() {
     try {
-      const res = await fetch('/api/admin/notificaciones', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/notificaciones', { headers: getAuthHeaders() });
       notificaciones = await res.json();
     } catch (error) {
       console.error('Error cargando notificaciones:', error);
@@ -974,7 +975,7 @@
 
   async function marcarNotificacionLeida(id) {
     try {
-      await fetch(`/api/admin/notificaciones/${id}/leida`, {
+      await fetch(`${API_URL}/api/admin/notificaciones/${id}/leida`, {
         method: 'PUT',
         headers: getAuthHeaders()
       });
@@ -987,7 +988,7 @@
   // Mensajería
   async function loadMensajes() {
     try {
-      const res = await fetch('/api/admin/mensajes', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/mensajes', { headers: getAuthHeaders() });
       mensajes = await res.json();
     } catch (error) {
       console.error('Error cargando mensajes:', error);
@@ -996,7 +997,7 @@
 
   async function loadRespuestasRapidas() {
     try {
-      const res = await fetch('/api/admin/respuestas-rapidas', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/respuestas-rapidas', { headers: getAuthHeaders() });
       respuestasRapidas = await res.json();
     } catch (error) {
       console.error('Error cargando respuestas rápidas:', error);
@@ -1027,7 +1028,7 @@
     }
     
     try {
-      const response = await fetch('/api/admin/mensajes', {
+      const response = await fetch(`${API_URL}/api/admin/mensajes', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(newMensaje)
@@ -1064,8 +1065,8 @@
     
     try {
       const url = editingRespuestaRapida 
-        ? `/api/admin/respuestas-rapidas/${editingRespuestaRapida._id}`
-        : '/api/admin/respuestas-rapidas';
+        ? `${API_URL}/api/admin/respuestas-rapidas/${editingRespuestaRapida._id}`
+        : `${API_URL}/api/admin/respuestas-rapidas`;
       const method = editingRespuestaRapida ? 'PUT' : 'POST';
       
       const response = await fetch(url, {
@@ -1095,7 +1096,7 @@
   async function deleteRespuestaRapida(id) {
     if (!confirm('¿Eliminar esta respuesta rápida?')) return;
     try {
-      await fetch(`/api/admin/respuestas-rapidas/${id}`, {
+      await fetch(`${API_URL}/api/admin/respuestas-rapidas/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -1109,7 +1110,7 @@
   async function editarPerfilAccesibilidad(alumno) {
     editingPerfilAccesibilidad = alumno;
     try {
-      const res = await fetch(`/api/admin/accesibilidad/${alumno._id}`, { 
+      const res = await fetch(`${API_URL}/api/admin/accesibilidad/${alumno._id}`, { 
         headers: getAuthHeaders() 
       });
       if (res.ok) {
@@ -1146,7 +1147,7 @@
     if (!editingPerfilAccesibilidad) return;
     
     try {
-      const response = await fetch(`/api/admin/accesibilidad/${editingPerfilAccesibilidad._id}`, {
+      const response = await fetch(`${API_URL}/api/admin/accesibilidad/${editingPerfilAccesibilidad._id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ perfilAccesibilidad: perfilAccesibilidadEdit })
@@ -1173,7 +1174,7 @@
     }
     
     try {
-      const res = await fetch(`/api/admin/progreso/${alumnoProgresoSeleccionado}`, { 
+      const res = await fetch(`${API_URL}/api/admin/progreso/${alumnoProgresoSeleccionado}`, { 
         headers: getAuthHeaders() 
       });
       if (res.ok) {
@@ -1192,7 +1193,7 @@
       return;
     }
     try {
-      const res = await fetch(`/api/admin/objetivos?alumnoId=${alumnoProgresoSeleccionado}`, { 
+      const res = await fetch(`${API_URL}/api/admin/objetivos?alumnoId=${alumnoProgresoSeleccionado}`, { 
         headers: getAuthHeaders() 
       });
       if (res.ok) {
@@ -1206,7 +1207,7 @@
   async function loadLogros() {
     if (!alumnoProgresoSeleccionado) return;
     try {
-      const res = await fetch(`/api/admin/progreso/${alumnoProgresoSeleccionado}/logros`, { 
+      const res = await fetch(`${API_URL}/api/admin/progreso/${alumnoProgresoSeleccionado}/logros`, { 
         headers: getAuthHeaders() 
       });
       if (res.ok) {
@@ -1225,8 +1226,8 @@
     
     try {
       const url = editingObjetivo 
-        ? `/api/admin/objetivos/${editingObjetivo._id}`
-        : '/api/admin/objetivos';
+        ? `${API_URL}/api/admin/objetivos/${editingObjetivo._id}`
+        : `${API_URL}/api/admin/objetivos`;
       const method = editingObjetivo ? 'PUT' : 'POST';
       
       const data = { ...newObjetivo };
@@ -1264,7 +1265,7 @@
   async function deleteObjetivo(id) {
     if (!confirm('¿Eliminar este objetivo?')) return;
     try {
-      await fetch(`/api/admin/objetivos/${id}`, {
+      await fetch(`${API_URL}/api/admin/objetivos/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -1288,7 +1289,7 @@
     }
     
     try {
-      const res = await fetch(`/api/admin/analisis-predictivo/${alumnoAnalisisSeleccionado}`, { 
+      const res = await fetch(`${API_URL}/api/admin/analisis-predictivo/${alumnoAnalisisSeleccionado}`, { 
         headers: getAuthHeaders() 
       });
       if (res.ok) {
@@ -1302,8 +1303,8 @@
   async function loadAlumnosEnRiesgo() {
     try {
       const url = filtroRiesgo !== 'todos' 
-        ? `/api/admin/analisis-predictivo/riesgo?nivelRiesgo=${filtroRiesgo}`
-        : '/api/admin/analisis-predictivo/riesgo';
+        ? `${API_URL}/api/admin/analisis-predictivo/riesgo?nivelRiesgo=${filtroRiesgo}`
+        : `${API_URL}/api/admin/analisis-predictivo/riesgo`;
       const res = await fetch(url, { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
@@ -1330,8 +1331,8 @@
   async function loadEncuestas() {
     try {
       const url = filtroEncuestas !== 'todos' 
-        ? `/api/admin/encuestas?tipo=${filtroEncuestas}`
-        : '/api/admin/encuestas';
+        ? `${API_URL}/api/admin/encuestas?tipo=${filtroEncuestas}`
+        : `${API_URL}/api/admin/encuestas`;
       const res = await fetch(url, { headers: getAuthHeaders() });
       if (res.ok) {
         encuestas = await res.json();
@@ -1343,7 +1344,7 @@
 
   async function loadEstadisticasEncuestas() {
     try {
-      const res = await fetch('/api/admin/encuestas/estadisticas', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/encuestas/estadisticas', { headers: getAuthHeaders() });
       if (res.ok) {
         estadisticasEncuestas = await res.json();
       }
@@ -1354,7 +1355,7 @@
 
   async function marcarSugerenciaRevisada(id) {
     try {
-      const res = await fetch(`/api/admin/encuestas/${id}/revisada`, {
+      const res = await fetch(`${API_URL}/api/admin/encuestas/${id}/revisada`, {
         method: 'PUT',
         headers: getAuthHeaders()
       });
@@ -1373,7 +1374,7 @@
     }
     
     try {
-      const res = await fetch('/api/encuestas/feedback-maestros', {
+      const res = await fetch(`${API_URL}/api/encuestas/feedback-maestros', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(newFeedbackMaestro)
@@ -1408,15 +1409,15 @@
       const params = new URLSearchParams();
       
       if (tipoReporte === 'mensual-uso') {
-        url = '/api/admin/reportes/mensual-uso';
+        url = `${API_URL}/api/admin/reportes/mensual-uso';
         params.append('mes', reporteMes);
         params.append('año', reporteAño);
       } else if (tipoReporte === 'impacto') {
-        url = '/api/admin/reportes/impacto';
+        url = `${API_URL}/api/admin/reportes/impacto';
         params.append('fechaInicio', reporteFechaInicio);
         params.append('fechaFin', reporteFechaFin);
       } else if (tipoReporte === 'academico') {
-        url = '/api/admin/reportes/academico';
+        url = `${API_URL}/api/admin/reportes/academico';
         if (reportePeriodo) params.append('periodo', reportePeriodo);
       }
       
@@ -1447,10 +1448,10 @@
     }
     
     const url = formato === 'excel' 
-      ? `/api/admin/reportes/exportar/excel?${params.toString()}`
+      ? `${API_URL}/api/admin/reportes/exportar/excel?${params.toString()}`
       : formato === 'pdf'
-      ? `/api/admin/reportes/exportar/pdf?${params.toString()}`
-      : `/api/admin/reportes/datos-analisis?${params.toString()}`;
+      ? `${API_URL}/api/admin/reportes/exportar/pdf?${params.toString()}`
+      : `${API_URL}/api/admin/reportes/datos-analisis?${params.toString()}`;
     
     window.open(url, '_blank');
   }
@@ -1458,7 +1459,7 @@
   // Funciones de tareas
   async function loadTareas() {
     try {
-      const res = await fetch('/api/admin/tareas', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/tareas', { headers: getAuthHeaders() });
       if (res.ok) {
         tareas = await res.json();
       }
@@ -1470,8 +1471,8 @@
   async function saveTarea() {
     try {
       const url = editingTarea 
-        ? `/api/admin/tareas/${editingTarea._id}`
-        : '/api/admin/tareas';
+        ? `${API_URL}/api/admin/tareas/${editingTarea._id}`
+        : `${API_URL}/api/admin/tareas`;
       const method = editingTarea ? 'PUT' : 'POST';
       
       const tareaData = {
@@ -1517,7 +1518,7 @@
   async function deleteTarea(id) {
     if (!confirm('¿Eliminar esta tarea?')) return;
     try {
-      const res = await fetch(`/api/admin/tareas/${id}`, {
+      const res = await fetch(`${API_URL}/api/admin/tareas/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -1533,7 +1534,7 @@
 
   async function verTarea(tarea) {
     try {
-      const res = await fetch(`/api/admin/tareas/${tarea._id}`, { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/tareas/${tarea._id}`, { headers: getAuthHeaders() });
       if (res.ok) {
         tareaSeleccionada = await res.json();
       } else {
@@ -1547,7 +1548,7 @@
 
   async function entregarTarea(tareaId, alumnoId) {
     try {
-      const res = await fetch(`/api/tareas/${tareaId}/entregar`, {
+      const res = await fetch(`${API_URL}/api/tareas/${tareaId}/entregar`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -1561,7 +1562,7 @@
         await loadTareas();
         entregaTarea = { archivo: '', comentarios: '' };
         if (tareaSeleccionada) {
-          const updated = await fetch(`/api/admin/tareas/${tareaId}`, { headers: getAuthHeaders() });
+          const updated = await fetch(`${API_URL}/api/admin/tareas/${tareaId}`, { headers: getAuthHeaders() });
           if (updated.ok) {
             tareaSeleccionada = await updated.json();
           }
@@ -1577,7 +1578,7 @@
 
   async function calificarTarea(tareaId, alumnoId) {
     try {
-      const res = await fetch(`/api/admin/tareas/${tareaId}/calificar`, {
+      const res = await fetch(`${API_URL}/api/admin/tareas/${tareaId}/calificar`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -1591,7 +1592,7 @@
         await loadTareas();
         calificacionTarea = { calificacion: '', comentarios: '' };
         if (tareaSeleccionada) {
-          const updated = await fetch(`/api/admin/tareas/${tareaId}`, { headers: getAuthHeaders() });
+          const updated = await fetch(`${API_URL}/api/admin/tareas/${tareaId}`, { headers: getAuthHeaders() });
           if (updated.ok) {
             tareaSeleccionada = await updated.json();
           }
@@ -1609,7 +1610,7 @@
     try {
       const mes = new Date().getMonth() + 1;
       const año = new Date().getFullYear();
-      const res = await fetch(`/api/admin/calendario-academico?mes=${mes}&año=${año}`, { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/calendario-academico?mes=${mes}&año=${año}`, { headers: getAuthHeaders() });
       if (res.ok) {
         calendarioAcademico = await res.json();
       }
@@ -1620,7 +1621,7 @@
 
   async function loadFechasImportantes() {
     try {
-      const res = await fetch('/api/admin/fechas-importantes?dias=30', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/fechas-importantes?dias=30', { headers: getAuthHeaders() });
       if (res.ok) {
         fechasImportantes = await res.json();
       }
@@ -1636,7 +1637,7 @@
       if (materiaSeleccionadaRecursos) params.append('materia', materiaSeleccionadaRecursos);
       if (busquedaRecursos) params.append('busqueda', busquedaRecursos);
       
-      const res = await fetch(`/api/admin/recursos?${params.toString()}`, { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/recursos?${params.toString()}`, { headers: getAuthHeaders() });
       if (res.ok) {
         recursos = await res.json();
       }
@@ -1663,8 +1664,8 @@
       }
       
       const url = editingRecurso 
-        ? `/api/admin/recursos/${editingRecurso._id}`
-        : '/api/admin/recursos';
+        ? `${API_URL}/api/admin/recursos/${editingRecurso._id}`
+        : `${API_URL}/api/admin/recursos`;
       const method = editingRecurso ? 'PUT' : 'POST';
       
       const headers = getAuthHeaders();
@@ -1707,7 +1708,7 @@
   async function deleteRecurso(id) {
     if (!confirm('¿Eliminar este recurso?')) return;
     try {
-      const res = await fetch(`/api/admin/recursos/${id}`, {
+      const res = await fetch(`${API_URL}/api/admin/recursos/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -1722,13 +1723,13 @@
 
   async function verRecurso(recurso) {
     try {
-      const res = await fetch(`/api/admin/recursos/${recurso._id}/url`, { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/recursos/${recurso._id}/url`, { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         if (data.url) {
           window.open(data.url, '_blank');
           // Registrar visualización
-          await fetch(`/api/recursos/${recurso._id}/registrar-uso`, {
+          await fetch(`${API_URL}/api/recursos/${recurso._id}/registrar-uso`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ accion: 'visualizacion' })
@@ -1742,13 +1743,13 @@
 
   async function descargarRecurso(recurso) {
     try {
-      const res = await fetch(`/api/admin/recursos/${recurso._id}/url`, { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/recursos/${recurso._id}/url`, { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         if (data.url) {
           window.open(data.url, '_blank');
           // Registrar descarga
-          await fetch(`/api/recursos/${recurso._id}/registrar-uso`, {
+          await fetch(`${API_URL}/api/recursos/${recurso._id}/registrar-uso`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ accion: 'descarga' })
@@ -1765,7 +1766,7 @@
       const params = new URLSearchParams();
       if (materiaSeleccionadaRecursos) params.append('materia', materiaSeleccionadaRecursos);
       
-      const res = await fetch(`/api/recursos/recomendaciones?${params.toString()}`, { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/recursos/recomendaciones?${params.toString()}`, { headers: getAuthHeaders() });
       if (res.ok) {
         recomendacionesRecursos = await res.json();
       }
@@ -3840,7 +3841,7 @@
             <button on:click={() => { materiaSeleccionadaRecursos = ''; busquedaRecursos = ''; loadRecursos(); }} class:active={!materiaSeleccionadaRecursos && !busquedaRecursos}>
               Todos
             </button>
-            <button on:click={() => { window.open('/api/recursos/learning-differences', '_blank'); }} class="btn-link">
+            <button on:click={() => { window.open(`${API_URL}/api/recursos/learning-differences', '_blank'); }} class="btn-link">
               ♿ Learning Differences
             </button>
           </div>

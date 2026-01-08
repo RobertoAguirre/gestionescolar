@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { API_URL } from '../config.js';
   
   let messages = [];
   let inputMessage = '';
@@ -40,7 +41,7 @@
     }
     
     try {
-      const res = await fetch('/api/encuestas/satisfaccion', {
+      const res = await fetch(`${API_URL}/api/encuestas/satisfaccion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -71,8 +72,8 @@
   async function loadMaestrosYAlumnos() {
     try {
       const [maestrosRes, alumnosRes] = await Promise.all([
-        fetch('/api/maestros'),
-        fetch('/api/alumnos')
+        fetch(`${API_URL}/api/maestros`),
+        fetch(`${API_URL}/api/alumnos`)
       ]);
       maestros = await maestrosRes.json();
       alumnos = await alumnosRes.json();
@@ -88,7 +89,7 @@
 
   async function cargarPerfilAccesibilidad(alumnoId) {
     try {
-      const response = await fetch(`/api/admin/accesibilidad/${alumnoId}`, {
+      const response = await fetch(`${API_URL}/api/admin/accesibilidad/${alumnoId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
         }
@@ -140,7 +141,7 @@
         respuestasCortas: respuestasCortas
       };
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -200,7 +201,7 @@
     }
 
     try {
-      const response = await fetch('/api/chat/image', {
+      const response = await fetch(`${API_URL}/api/chat/image`, {
         method: 'POST',
         body: formData
       });
@@ -282,7 +283,7 @@
     };
 
     try {
-      const response = await fetch('/api/citas', {
+      const response = await fetch(`${API_URL}/api/citas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(citaData)
