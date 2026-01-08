@@ -362,7 +362,7 @@
 
   <div class="messages-container">
     {#each messages as msg}
-      <div class="message {msg.role}">
+      <div class={`message ${msg.role}`}>
         <div class="message-content">
           {msg.content}
         </div>

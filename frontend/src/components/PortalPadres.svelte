@@ -522,7 +522,7 @@
                 <div class="cita-item">
                   <div class="cita-header">
                     <strong>{cita.motivo}</strong>
-                    <span class="badge badge-{cita.estado}">{cita.estado}</span>
+                    <span class={`badge badge-${cita.estado}`}>{cita.estado}</span>
                   </div>
                   <p>📅 {new Date(cita.fecha).toLocaleString('es-ES')}</p>
                   <p>Tipo: {cita.tipo === 'maestro' ? 'Maestro' : 'Directivo'}</p>

@@ -326,13 +326,18 @@ router.get('/api/admin/calificaciones/alertas', adminAuth, async (req, res) => {
     const umbralNum = parseFloat(umbral);
     
     const db = getDB();
-    const alumnos = await db.collection('alumnos').find({ activo: true }).toArray();
+    const escuelaId = req.escuelaId || getEscuelaId(req);
+    let queryAlumnos = { activo: true };
+    queryAlumnos = addEscuelaFilter(queryAlumnos, escuelaId);
+    const alumnos = await db.collection('alumnos').find(queryAlumnos).toArray();
     
     const alertas = [];
     
     for (const alumno of alumnos) {
+      let queryCalificaciones = { alumnoId: alumno._id };
+      queryCalificaciones = addEscuelaFilter(queryCalificaciones, escuelaId);
       const calificaciones = await db.collection('calificaciones')
-        .find({ alumnoId: alumno._id })
+        .find(queryCalificaciones)
         .toArray();
       
       if (calificaciones.length > 0) {
@@ -351,7 +356,6 @@ router.get('/api/admin/calificaciones/alertas', adminAuth, async (req, res) => {
     }
     
     // Agregar notificaciones automáticas (marcar como notificadas)
-    const db = getDB();
     const notificaciones = await db.collection('notificaciones')
       .find({ tipo: 'bajo_rendimiento', leida: false })
       .toArray();
@@ -364,27 +368,37 @@ router.get('/api/admin/calificaciones/alertas', adminAuth, async (req, res) => {
       
       if (!existeNotificacion) {
         // Obtener datos del alumno para notificar a padres
-        const alumno = await db.collection('alumnos').findOne({ _id: alerta.alumnoId });
+        let queryAlumno = { _id: alerta.alumnoId };
+        queryAlumno = addEscuelaFilter(queryAlumno, escuelaId);
+        const alumno = await db.collection('alumnos').findOne(queryAlumno);
         
-        await db.collection('notificaciones').insertOne({
+        const notificacionData = {
           tipo: 'bajo_rendimiento',
           alumnoId: alerta.alumnoId,
           titulo: `Alerta académica: ${alerta.alumnoNombre}`,
           mensaje: `El alumno ${alerta.alumnoNombre} tiene un promedio de ${alerta.promedio}/100. Se recomienda atención inmediata.`,
           leida: false,
           timestamp: new Date()
-        });
+        };
+        if (escuelaId) {
+          notificacionData.escuelaId = escuelaId;
+        }
+        await db.collection('notificaciones').insertOne(notificacionData);
         
         // Crear mensaje automático a padres si tiene email
         if (alumno && alumno.email) {
-          await db.collection('mensajes').insertOne({
+          const mensajeData = {
             alumnoId: alerta.alumnoId,
             tipo: 'sistema',
             asunto: 'Alerta académica - Bajo rendimiento',
             mensaje: `Estimado padre/madre de ${alerta.alumnoNombre},\n\nLe informamos que el promedio académico actual es de ${alerta.promedio}/100, lo cual requiere atención. Le recomendamos agendar una cita para revisar el caso.\n\nAtentamente,\nEquipo Administrativo`,
             leido: false,
             timestamp: new Date()
-          });
+          };
+          if (escuelaId) {
+            mensajeData.escuelaId = escuelaId;
+          }
+          await db.collection('mensajes').insertOne(mensajeData);
         }
       }
     }

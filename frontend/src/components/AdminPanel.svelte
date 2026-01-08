@@ -4,6 +4,9 @@
   let isAuthenticated = false;
   let password = '';
   let activeTab = 'dashboard';
+  let isSuperAdmin = false;
+  let escuelas = [];
+  let escuelaId = '';
   let stats = { 
     conversations: 0, 
     citas: 0, 
@@ -1799,143 +1802,149 @@
       <button on:click={logout} class="logout-btn">Salir</button>
     </header>
 
-    <div class="stats">
-      <div class="stat-card">
-        <div class="stat-value">{stats.conversations}</div>
-        <div class="stat-label">Conversaciones</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{stats.citas}</div>
-        <div class="stat-label">Total Citas</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{stats.citasPendientes}</div>
-        <div class="stat-label">Citas Pendientes</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{stats.maestros}</div>
-        <div class="stat-label">Maestros</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{stats.alumnos}</div>
-        <div class="stat-label">Alumnos</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{stats.grupos}</div>
-        <div class="stat-label">Grupos</div>
-      </div>
-    </div>
+    <div class="admin-layout">
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <button
+            class:active={activeTab === 'dashboard'}
+            on:click={() => activeTab = 'dashboard'}
+          >
+            📊 Dashboard
+          </button>
+          <button
+            class:active={activeTab === 'horarios'}
+            on:click={() => activeTab = 'horarios'}
+          >
+            📅 Horarios
+          </button>
+          <button
+            class:active={activeTab === 'eventos'}
+            on:click={() => activeTab = 'eventos'}
+          >
+            🎉 Eventos
+          </button>
+          <button
+            class:active={activeTab === 'planes'}
+            on:click={() => activeTab = 'planes'}
+          >
+            💰 Planes
+          </button>
+          <button
+            class:active={activeTab === 'informacion'}
+            on:click={() => activeTab = 'informacion'}
+          >
+            ℹ️ Información
+          </button>
+          <button
+            class:active={activeTab === 'citas'}
+            on:click={() => activeTab = 'citas'}
+          >
+            📋 Citas
+          </button>
+          <button
+            class:active={activeTab === 'maestros'}
+            on:click={() => activeTab = 'maestros'}
+          >
+            👨‍🏫 Maestros
+          </button>
+          <button
+            class:active={activeTab === 'alumnos'}
+            on:click={() => activeTab = 'alumnos'}
+          >
+            👨‍🎓 Alumnos
+          </button>
+          <button
+            class:active={activeTab === 'espacios'}
+            on:click={() => activeTab = 'espacios'}
+          >
+            🏫 Espacios
+          </button>
+          <button
+            class:active={activeTab === 'grupos'}
+            on:click={() => activeTab = 'grupos'}
+          >
+            👥 Grupos
+          </button>
+          <button
+            class:active={activeTab === 'calificaciones'}
+            on:click={() => activeTab = 'calificaciones'}
+          >
+            📊 Calificaciones
+          </button>
+          <button
+            class:active={activeTab === 'asistencia'}
+            on:click={() => { activeTab = 'asistencia'; loadAsistencia(); loadAlertasAusentismo(); }}
+          >
+            ✅ Asistencia
+          </button>
+          <button
+            class:active={activeTab === 'mensajeria'}
+            on:click={() => activeTab = 'mensajeria'}
+          >
+            💬 Mensajería
+          </button>
+          <button
+            class:active={activeTab === 'progreso'}
+            on:click={() => activeTab = 'progreso'}
+          >
+            📈 Progreso Académico
+          </button>
+          <button
+            class:active={activeTab === 'analisis'}
+            on:click={() => activeTab = 'analisis'}
+          >
+            🤖 Análisis Predictivo
+          </button>
+          <button
+            class:active={activeTab === 'encuestas'}
+            on:click={() => activeTab = 'encuestas'}
+          >
+            📋 Encuestas y Feedback
+          </button>
+          <button
+            class:active={activeTab === 'reportes'}
+            on:click={() => activeTab = 'reportes'}
+          >
+            📄 Reportes
+          </button>
+          <button
+            class:active={activeTab === 'tareas'}
+            on:click={() => { activeTab = 'tareas'; loadTareas(); loadCalendarioAcademico(); loadFechasImportantes(); }}
+          >
+            📝 Tareas y Actividades
+          </button>
+        </nav>
+      </aside>
 
-    <div class="tabs">
-      <button
-        class:active={activeTab === 'dashboard'}
-        on:click={() => activeTab = 'dashboard'}
-      >
-        📊 Dashboard
-      </button>
-      <button
-        class:active={activeTab === 'horarios'}
-        on:click={() => activeTab = 'horarios'}
-      >
-        📅 Horarios
-      </button>
-      <button
-        class:active={activeTab === 'eventos'}
-        on:click={() => activeTab = 'eventos'}
-      >
-        🎉 Eventos
-      </button>
-      <button
-        class:active={activeTab === 'planes'}
-        on:click={() => activeTab = 'planes'}
-      >
-        💰 Planes
-      </button>
-      <button
-        class:active={activeTab === 'informacion'}
-        on:click={() => activeTab = 'informacion'}
-      >
-        ℹ️ Información
-      </button>
-      <button
-        class:active={activeTab === 'citas'}
-        on:click={() => activeTab = 'citas'}
-      >
-        📋 Citas
-      </button>
-      <button
-        class:active={activeTab === 'maestros'}
-        on:click={() => activeTab = 'maestros'}
-      >
-        👨‍🏫 Maestros
-      </button>
-      <button
-        class:active={activeTab === 'alumnos'}
-        on:click={() => activeTab = 'alumnos'}
-      >
-        👨‍🎓 Alumnos
-      </button>
-      <button
-        class:active={activeTab === 'espacios'}
-        on:click={() => activeTab = 'espacios'}
-      >
-        🏫 Espacios
-      </button>
-      <button
-        class:active={activeTab === 'grupos'}
-        on:click={() => activeTab = 'grupos'}
-      >
-        👥 Grupos
-      </button>
-      <button
-        class:active={activeTab === 'calificaciones'}
-        on:click={() => activeTab = 'calificaciones'}
-      >
-        📊 Calificaciones
-      </button>
-      <button
-        class:active={activeTab === 'asistencia'}
-        on:click={() => { activeTab = 'asistencia'; loadAsistencia(); loadAlertasAusentismo(); }}
-      >
-        ✅ Asistencia
-      </button>
-      <button
-        class:active={activeTab === 'mensajeria'}
-        on:click={() => activeTab = 'mensajeria'}
-      >
-        💬 Mensajería
-      </button>
-      <button
-        class:active={activeTab === 'progreso'}
-        on:click={() => activeTab = 'progreso'}
-      >
-        📈 Progreso Académico
-      </button>
-      <button
-        class:active={activeTab === 'analisis'}
-        on:click={() => activeTab = 'analisis'}
-      >
-        🤖 Análisis Predictivo
-      </button>
-      <button
-        class:active={activeTab === 'encuestas'}
-        on:click={() => activeTab = 'encuestas'}
-      >
-        📋 Encuestas y Feedback
-      </button>
-      <button
-        class:active={activeTab === 'reportes'}
-        on:click={() => activeTab = 'reportes'}
-      >
-        📄 Reportes
-      </button>
-      <button
-        class:active={activeTab === 'tareas'}
-        on:click={() => { activeTab = 'tareas'; loadTareas(); loadCalendarioAcademico(); loadFechasImportantes(); }}
-      >
-        📝 Tareas y Actividades
-      </button>
-    </div>
+      <main class="main-content">
+        {#if activeTab === 'dashboard'}
+          <div class="stats-overview">
+            <div class="stat-card">
+              <div class="stat-value">{stats.conversations}</div>
+              <div class="stat-label">Conversaciones</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{stats.citas}</div>
+              <div class="stat-label">Total Citas</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{stats.citasPendientes}</div>
+              <div class="stat-label">Citas Pendientes</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{stats.maestros}</div>
+              <div class="stat-label">Maestros</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{stats.alumnos}</div>
+              <div class="stat-label">Alumnos</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{stats.grupos}</div>
+              <div class="stat-label">Grupos</div>
+            </div>
+          </div>
+        {/if}
 
     <div class="content">
       {#if activeTab === 'dashboard'}
@@ -2051,20 +2060,20 @@
             <h3>📋 Citas Recientes</h3>
             <div class="list">
               {#each citas.slice(0, 5).sort((a, b) => new Date(b.fecha) - new Date(a.fecha)) as c}
+                {@const maestro = c.maestroId ? maestros.find(m => String(m._id) === String(c.maestroId)) : null}
+                {@const alumno = c.alumnoId ? alumnos.find(a => String(a._id) === String(c.alumnoId)) : null}
                 <div class="item cita-item">
                   <div>
                     <strong>{c.nombre}</strong>
                     <p>{c.motivo}</p>
                     <small>📅 {new Date(c.fecha).toLocaleString('es-ES')} | {c.tipo}</small>
-                    {@const maestro = c.maestroId ? maestros.find(m => String(m._id) === String(c.maestroId)) : null}
-                    {@const alumno = c.alumnoId ? alumnos.find(a => String(a._id) === String(c.alumnoId)) : null}
                     {#if maestro}
                       <small>👨‍🏫 Maestro: {maestro.nombre}</small>
                     {/if}
                     {#if alumno}
                       <small>👨‍🎓 Alumno: {alumno.nombre}</small>
                     {/if}
-                    <span class="badge badge-{c.estado}">{c.estado}</span>
+                    <span class={`badge badge-${c.estado}`}>{c.estado}</span>
                   </div>
                 </div>
               {/each}
@@ -2222,14 +2231,14 @@
               c.motivo.toLowerCase().includes(searchCitas.toLowerCase()) ||
               (c.email && c.email.toLowerCase().includes(searchCitas.toLowerCase()))
             ) as c}
+              {@const maestro = c.maestroId ? maestros.find(m => String(m._id) === String(c.maestroId)) : null}
+              {@const alumno = c.alumnoId ? alumnos.find(a => String(a._id) === String(c.alumnoId)) : null}
               <div class="item cita-item">
                 <div>
                   <strong>{c.nombre}</strong>
                   <p>{c.motivo}</p>
                   <small>📧 {c.email} | 📞 {c.telefono || 'N/A'}</small>
                   <small>📅 {new Date(c.fecha).toLocaleString('es-ES')} | Tipo: {c.tipo}</small>
-                  {@const maestro = c.maestroId ? maestros.find(m => String(m._id) === String(c.maestroId)) : null}
-                  {@const alumno = c.alumnoId ? alumnos.find(a => String(a._id) === String(c.alumnoId)) : null}
                   {#if maestro}
                     <small>👨‍🏫 Maestro: {maestro.nombre} {maestro.especialidad ? `(${maestro.especialidad})` : ''}</small>
                   {/if}
@@ -2239,7 +2248,7 @@
                   {#if c.notas}
                     <small>📝 Notas: {c.notas}</small>
                   {/if}
-                  <span class="badge badge-{c.estado}">{c.estado}</span>
+                  <span class={`badge badge-${c.estado}`}>{c.estado}</span>
                 </div>
                 <div class="actions">
                   {#if c.estado === 'pendiente'}
@@ -2282,6 +2291,7 @@
               (m.especialidad && m.especialidad.toLowerCase().includes(searchMaestros.toLowerCase())) ||
               (m.email && m.email.toLowerCase().includes(searchMaestros.toLowerCase()))
             ) as m}
+              {@const gruposDelMaestro = grupos.filter(g => g.maestroId && String(g.maestroId) === String(m._id))}
               <div class="item">
                 <div>
                   <strong>{m.nombre}</strong>
@@ -2290,7 +2300,6 @@
                   {#if m.horariosDisponibles}
                     <small>🕐 {m.horariosDisponibles}</small>
                   {/if}
-                  {@const gruposDelMaestro = grupos.filter(g => g.maestroId && String(g.maestroId) === String(m._id))}
                   {#if gruposDelMaestro.length > 0}
                     <small>👥 Grupos: {gruposDelMaestro.map(g => g.nombre).join(', ')}</small>
                   {/if}
@@ -2417,6 +2426,7 @@
               e.nombre.toLowerCase().includes(searchEspacios.toLowerCase()) ||
               e.tipo.toLowerCase().includes(searchEspacios.toLowerCase())
             ) as e}
+              {@const gruposEnEspacio = grupos.filter(g => g.espacioId && String(g.espacioId) === String(e._id))}
               <div class="item">
                 <div>
                   <strong>{e.nombre}</strong>
@@ -2425,7 +2435,6 @@
                   {#if e.equipamiento}
                     <small>⚙️ {e.equipamiento}</small>
                   {/if}
-                  {@const gruposEnEspacio = grupos.filter(g => g.espacioId && String(g.espacioId) === String(e._id))}
                   {#if gruposEnEspacio.length > 0}
                     <small>👥 Grupos: {gruposEnEspacio.map(g => g.nombre).join(', ')}</small>
                   {/if}
@@ -2478,15 +2487,15 @@
               g.nombre.toLowerCase().includes(searchGrupos.toLowerCase()) ||
               (g.nivel && g.nivel.toLowerCase().includes(searchGrupos.toLowerCase()))
             ) as g}
+              {@const maestroIdStr = g.maestroId ? String(g.maestroId) : ''}
+              {@const espacioIdStr = g.espacioId ? String(g.espacioId) : ''}
+              {@const maestro = maestroIdStr ? maestros.find(m => String(m._id) === maestroIdStr) : null}
+              {@const espacio = espacioIdStr ? espacios.find(e => String(e._id) === espacioIdStr) : null}
               <div class="item grupo-item">
                 <div class="grupo-header">
                   <div>
                     <strong>{g.nombre}</strong>
                     <p>{g.nivel || 'Sin nivel'}</p>
-                    {@const maestroIdStr = g.maestroId ? String(g.maestroId) : ''}
-                    {@const espacioIdStr = g.espacioId ? String(g.espacioId) : ''}
-                    {@const maestro = maestroIdStr ? maestros.find(m => String(m._id) === maestroIdStr) : null}
-                    {@const espacio = espacioIdStr ? espacios.find(e => String(e._id) === espacioIdStr) : null}
                     {#if maestro}
                       <small>👨‍🏫 Maestro: {maestro.nombre} {maestro.especialidad ? `(${maestro.especialidad})` : ''}</small>
                     {:else}
@@ -3892,6 +3901,8 @@
           </div>
         </div>
       {/if}
+      </div>
+      </main>
     </div>
   </div>
 {/if}
@@ -4623,9 +4634,6 @@
     cursor: pointer;
     font-weight: 600;
   }
-</style>
-
-<style>
   .login-container {
     min-height: 100vh;
     display: flex;
@@ -4670,10 +4678,8 @@
   }
 
   .admin-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-    background: white;
+    width: 100%;
+    background: #f8f9fa;
     min-height: 100vh;
   }
 
@@ -4681,9 +4687,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #f0f0f0;
+    padding: 20px 30px;
+    background: white;
+    border-bottom: 2px solid #e9ecef;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
 
   header h1 {
@@ -4700,9 +4710,82 @@
     font-weight: 600;
   }
 
-  .stats {
+  .admin-layout {
+    display: flex;
+    gap: 0;
+    min-height: calc(100vh - 80px);
+  }
+
+  .sidebar {
+    width: 260px;
+    background: white;
+    border-right: 2px solid #e9ecef;
+    padding: 20px 0;
+    position: sticky;
+    top: 80px;
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex-shrink: 0;
+    scrollbar-width: thin;
+    scrollbar-color: #667eea #f8f9fa;
+  }
+
+  .sidebar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sidebar::-webkit-scrollbar-track {
+    background: #f8f9fa;
+  }
+
+  .sidebar::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 3px;
+  }
+
+  .sidebar::-webkit-scrollbar-thumb:hover {
+    background: #5568d3;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 10px;
+  }
+
+  .sidebar-nav button {
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    text-align: left;
+    transition: all 0.2s;
+    color: #495057;
+    font-size: 14px;
+  }
+
+  .sidebar-nav button:hover {
+    background: #f8f9fa;
+  }
+
+  .sidebar-nav button.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+
+  .main-content {
+    flex: 1;
+    padding: 30px;
+    overflow-x: hidden;
+  }
+
+  .stats-overview {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 20px;
     margin-bottom: 30px;
   }
@@ -4710,15 +4793,16 @@
   .stat-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 20px;
+    padding: 24px;
     border-radius: 12px;
     text-align: center;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
   }
 
   .stat-value {
     font-size: 2.5rem;
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
   }
 
   .stat-label {
@@ -4726,33 +4810,16 @@
     opacity: 0.9;
   }
 
-  .tabs {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
-  }
-
-  .tabs button {
-    padding: 12px 24px;
-    border: 2px solid #ddd;
-    background: white;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.2s;
-  }
-
-  .tabs button.active {
-    background: #667eea;
-    color: white;
-    border-color: #667eea;
+  .content {
+    width: 100%;
   }
 
   .section {
-    background: #f8f9fa;
+    background: white;
     padding: 30px;
     border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
   }
 
   .section h2 {
@@ -4896,8 +4963,8 @@
 
   .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
     margin-bottom: 30px;
   }
 
@@ -5033,8 +5100,8 @@
 
   .impact-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
     margin-bottom: 30px;
   }
 
@@ -5247,8 +5314,7 @@
   }
 
   .reportes-container {
-    max-width: 1000px;
-    margin: 0 auto;
+    width: 100%;
   }
 
   .reportes-selector {
@@ -5780,6 +5846,130 @@
   .badge-baja {
     background: #28a745;
     color: white;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 1200px) {
+    .dashboard-grid {
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+    
+    .impact-grid {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .admin-layout {
+      flex-direction: column;
+    }
+
+    .sidebar {
+      width: 100%;
+      height: auto;
+      position: relative;
+      top: 0;
+      border-right: none;
+      border-bottom: 2px solid #e9ecef;
+      max-height: 300px;
+    }
+
+    .sidebar-nav {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px;
+    }
+
+    .sidebar-nav button {
+      flex: 1 1 auto;
+      min-width: 120px;
+      text-align: center;
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+
+    .main-content {
+      padding: 20px;
+    }
+
+    .stats-overview {
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 15px;
+    }
+
+    .stat-card {
+      padding: 18px;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+    }
+
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+
+    .impact-grid {
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+
+    header {
+      padding: 15px 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    header h1 {
+      font-size: 1.2rem;
+    }
+
+    .section {
+      padding: 20px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-content {
+      padding: 15px;
+    }
+
+    .stats-overview {
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .stat-card {
+      padding: 15px;
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+    }
+
+    .sidebar-nav button {
+      min-width: 100px;
+      font-size: 12px;
+      padding: 8px 10px;
+    }
+
+    header {
+      padding: 12px 15px;
+    }
+
+    header h1 {
+      font-size: 1rem;
+    }
+
+    .section {
+      padding: 15px;
+    }
   }
 </style>
 

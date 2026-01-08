@@ -39,7 +39,7 @@ router.post('/api/chat', async (req, res) => {
 
     const escuelaId = getEscuelaId(req);
     const knowledge = await getBotKnowledge(escuelaId);
-    const systemPrompt = baseSystemPrompt + knowledge;
+    let systemPrompt = baseSystemPrompt + knowledge;
 
     // Obtener perfil de accesibilidad del alumno si se proporciona
     let perfil = null;
@@ -92,25 +92,24 @@ router.post('/api/chat', async (req, res) => {
     const sugiereCita = assistantMessage.toLowerCase().includes('cita') || 
                         assistantMessage.toLowerCase().includes('agendar');
 
-          const db = getDB();
-          const escuelaId = getEscuelaId(req);
-          
-          const conversationData = {
-            userMessage: message,
-            assistantMessage: assistantMessage,
-            timestamp: new Date(),
-            responseTime: responseTime,
-            sugiereCita: sugiereCita,
-            resueltoSinCita: !sugiereCita,
-            alumnoId: alumnoId || null,
-            perfilAccesibilidad: perfilFinal
-          };
-          
-          if (escuelaId) {
-            conversationData.escuelaId = escuelaId;
-          }
-          
-          await db.collection('conversations').insertOne(conversationData);
+    const db = getDB();
+    
+    const conversationData = {
+      userMessage: message,
+      assistantMessage: assistantMessage,
+      timestamp: new Date(),
+      responseTime: responseTime,
+      sugiereCita: sugiereCita,
+      resueltoSinCita: !sugiereCita,
+      alumnoId: alumnoId || null,
+      perfilAccesibilidad: perfilFinal
+    };
+    
+    if (escuelaId) {
+      conversationData.escuelaId = escuelaId;
+    }
+    
+    await db.collection('conversations').insertOne(conversationData);
 
     res.json({ 
       message: assistantMessage,

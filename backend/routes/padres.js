@@ -5,34 +5,6 @@ import crypto from 'crypto';
 
 const router = express.Router();
 
-// Middleware de autenticación para padres
-async function authPadre(req, res, next) {
-  try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ error: 'Token requerido' });
-    }
-    
-    const db = getDB();
-    const sesion = await db.collection('sesiones_padres').findOne({
-      token,
-      expira: { $gt: new Date() }
-    });
-    
-    if (!sesion) {
-      return res.status(401).json({ error: 'Token inválido o expirado' });
-    }
-    
-    req.padreId = sesion.padreId;
-    req.alumnoId = sesion.alumnoId;
-    next();
-  } catch (error) {
-    console.error('Error en autenticación de padre:', error);
-    res.status(500).json({ error: 'Error en autenticación' });
-  }
-}
-
 // Función para generar token de sesión
 function generarToken() {
   return crypto.randomBytes(32).toString('hex');
