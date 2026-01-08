@@ -119,7 +119,7 @@
 
   async function checkSuperAdmin() {
     try {
-      const res = await fetch(`${API_URL}/api/super-admin/escuelas', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/super-admin/escuelas`, { headers: getAuthHeaders() });
       if (res.ok) {
         escuelas = await res.json();
         isSuperAdmin = true;
@@ -137,7 +137,7 @@
 
   async function login() {
     try {
-      const response = await fetch(`${API_URL}/api/admin/login', {
+      const response = await fetch(`${API_URL}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password })
@@ -202,7 +202,7 @@
 
   async function loadStats() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/stats', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/stats`, { headers: getAuthHeaders() });
       stats = await res.json();
     } catch (error) {
       console.error('Error cargando estadísticas:', error);
@@ -211,7 +211,7 @@
 
   async function loadHorarios() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/horarios', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/horarios`, { headers: getAuthHeaders() });
       horarios = await res.json();
     } catch (error) {
       console.error('Error cargando horarios:', error);
@@ -220,7 +220,7 @@
 
   async function loadEventos() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/eventos', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/eventos`, { headers: getAuthHeaders() });
       eventos = await res.json();
     } catch (error) {
       console.error('Error cargando eventos:', error);
@@ -229,7 +229,7 @@
 
   async function loadPlanes() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/planes', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/planes`, { headers: getAuthHeaders() });
       planes = await res.json();
     } catch (error) {
       console.error('Error cargando planes:', error);
@@ -238,7 +238,7 @@
 
   async function loadCitas() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/citas', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/citas`, { headers: getAuthHeaders() });
       citas = await res.json();
     } catch (error) {
       console.error('Error cargando citas:', error);
@@ -247,7 +247,7 @@
 
   async function loadInformacion() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/informacion', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/informacion`, { headers: getAuthHeaders() });
       informacion = await res.json();
     } catch (error) {
       console.error('Error cargando información:', error);
@@ -314,7 +314,7 @@
       const url = editingEvento 
         ? `${API_URL}/api/admin/eventos/${editingEvento._id}`
         : `${API_URL}/api/admin/eventos`;
-      const method = editingEvento ? 'PUT' : 'POST';
+        const method = editingEvento ? 'PUT' : 'POST';
       
       await fetch(url, {
         method,
@@ -392,7 +392,7 @@
   // Información
   async function saveInformacion() {
     try {
-      await fetch(`${API_URL}/api/admin/informacion', {
+      await fetch(`${API_URL}/api/admin/informacion`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ contenido: informacion.contenido })
@@ -406,7 +406,7 @@
   // Maestros
   async function loadMaestros() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/maestros', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/maestros`, { headers: getAuthHeaders() });
       maestros = await res.json();
     } catch (error) {
       console.error('Error cargando maestros:', error);
@@ -472,7 +472,7 @@
   // Alumnos
   async function loadAlumnos() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/alumnos', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/alumnos`, { headers: getAuthHeaders() });
       alumnos = await res.json();
     } catch (error) {
       console.error('Error cargando alumnos:', error);
@@ -547,7 +547,7 @@
   // Espacios
   async function loadEspacios() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/espacios', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/espacios`, { headers: getAuthHeaders() });
       espacios = await res.json();
     } catch (error) {
       console.error('Error cargando espacios:', error);
@@ -616,7 +616,7 @@
   // Grupos
   async function loadGrupos() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/grupos', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/grupos`, { headers: getAuthHeaders() });
       grupos = await res.json();
     } catch (error) {
       console.error('Error cargando grupos:', error);
@@ -696,7 +696,7 @@
   // Calificaciones
   async function loadCalificaciones() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/calificaciones', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/calificaciones`, { headers: getAuthHeaders() });
       calificaciones = await res.json();
     } catch (error) {
       console.error('Error cargando calificaciones:', error);
@@ -705,7 +705,7 @@
 
   async function loadAlertas() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/calificaciones/alertas?umbral=70', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/calificaciones/alertas?umbral=70`, { headers: getAuthHeaders() });
       const data = await res.json();
       alertas = data.alertas || [];
     } catch (error) {
@@ -823,7 +823,7 @@
       const data = await res.json();
       let mensaje = `Recomendaciones para el alumno\nPromedio General: ${data.promedioGeneral}/100\n\n`;
       if (data.recomendaciones.length === 0) {
-        mensaje += 'No hay recomendaciones específicas en este momento.';
+          mensaje += 'No hay recomendaciones específicas en este momento.';
       } else {
         data.recomendaciones.forEach(r => {
           mensaje += `[${r.prioridad.toUpperCase()}] ${r.mensaje}\n\n`;
@@ -838,7 +838,7 @@
   // Asistencia
   async function loadAsistencia() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/asistencia', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/asistencia`, { headers: getAuthHeaders() });
       asistencia = await res.json();
     } catch (error) {
       console.error('Error cargando asistencia:', error);
@@ -847,7 +847,7 @@
 
   async function loadAlertasAusentismo() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/asistencia/alertas?umbral=80', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/asistencia/alertas?umbral=80`, { headers: getAuthHeaders() });
       const data = await res.json();
       alertasAusentismo = data.alertas || [];
     } catch (error) {
@@ -966,7 +966,7 @@
   // Notificaciones
   async function loadNotificaciones() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/notificaciones', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/notificaciones`, { headers: getAuthHeaders() });
       notificaciones = await res.json();
     } catch (error) {
       console.error('Error cargando notificaciones:', error);
@@ -988,7 +988,7 @@
   // Mensajería
   async function loadMensajes() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/mensajes', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/mensajes`, { headers: getAuthHeaders() });
       mensajes = await res.json();
     } catch (error) {
       console.error('Error cargando mensajes:', error);
@@ -997,7 +997,7 @@
 
   async function loadRespuestasRapidas() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/respuestas-rapidas', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/respuestas-rapidas`, { headers: getAuthHeaders() });
       respuestasRapidas = await res.json();
     } catch (error) {
       console.error('Error cargando respuestas rápidas:', error);
@@ -1028,7 +1028,7 @@
     }
     
     try {
-      const response = await fetch(`${API_URL}/api/admin/mensajes', {
+      const response = await fetch(`${API_URL}/api/admin/mensajes`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(newMensaje)
@@ -1316,15 +1316,15 @@
   }
 
   function getColorRiesgo(nivel) {
-    if (nivel === 'alto') return '#dc3545';
-    if (nivel === 'medio') return '#ffc107';
+      if (nivel === 'alto') return '#dc3545';
+      if (nivel === 'medio') return '#ffc107';
     return '#28a745';
   }
 
   function getIconoRiesgo(nivel) {
-    if (nivel === 'alto') return '🔴';
-    if (nivel === 'medio') return '🟡';
-    return '🟢';
+      if (nivel === 'alto') return '🔴';
+      if (nivel === 'medio') return '🟡';
+      return '🟢';
   }
 
   // Encuestas y feedback
@@ -1344,7 +1344,7 @@
 
   async function loadEstadisticasEncuestas() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/encuestas/estadisticas', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/encuestas/estadisticas`, { headers: getAuthHeaders() });
       if (res.ok) {
         estadisticasEncuestas = await res.json();
       }
@@ -1374,7 +1374,7 @@
     }
     
     try {
-      const res = await fetch(`${API_URL}/api/encuestas/feedback-maestros', {
+      const res = await fetch(`${API_URL}/api/encuestas/feedback-maestros`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(newFeedbackMaestro)
@@ -1396,10 +1396,10 @@
   }
 
   function getTipoEncuestaIcono(tipo) {
-    if (tipo === 'satisfaccion') return '⭐';
-    if (tipo === 'sugerencia') return '💡';
-    if (tipo === 'feedback_maestro') return '👨‍🏫';
-    return '📋';
+      if (tipo === 'satisfaccion') return '⭐';
+      if (tipo === 'sugerencia') return '💡';
+      if (tipo === 'feedback_maestro') return '👨‍🏫';
+      return '📋';
   }
 
   // Funciones de reportes
@@ -1409,15 +1409,15 @@
       const params = new URLSearchParams();
       
       if (tipoReporte === 'mensual-uso') {
-        url = `${API_URL}/api/admin/reportes/mensual-uso';
+        url = `${API_URL}/api/admin/reportes/mensual-uso`;
         params.append('mes', reporteMes);
         params.append('año', reporteAño);
       } else if (tipoReporte === 'impacto') {
-        url = `${API_URL}/api/admin/reportes/impacto';
+        url = `${API_URL}/api/admin/reportes/impacto`;
         params.append('fechaInicio', reporteFechaInicio);
         params.append('fechaFin', reporteFechaFin);
       } else if (tipoReporte === 'academico') {
-        url = `${API_URL}/api/admin/reportes/academico';
+        url = `${API_URL}/api/admin/reportes/academico`;
         if (reportePeriodo) params.append('periodo', reportePeriodo);
       }
       
@@ -1459,7 +1459,7 @@
   // Funciones de tareas
   async function loadTareas() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/tareas', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/tareas`, { headers: getAuthHeaders() });
       if (res.ok) {
         tareas = await res.json();
       }
@@ -1621,7 +1621,7 @@
 
   async function loadFechasImportantes() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/fechas-importantes?dias=30', { headers: getAuthHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/fechas-importantes?dias=30`, { headers: getAuthHeaders() });
       if (res.ok) {
         fechasImportantes = await res.json();
       }
@@ -3841,7 +3841,7 @@
             <button on:click={() => { materiaSeleccionadaRecursos = ''; busquedaRecursos = ''; loadRecursos(); }} class:active={!materiaSeleccionadaRecursos && !busquedaRecursos}>
               Todos
             </button>
-            <button on:click={() => { window.open(`${API_URL}/api/recursos/learning-differences', '_blank'); }} class="btn-link">
+            <button on:click={() => { window.open(`${API_URL}/api/recursos/learning-differences`, '_blank'); }} class="btn-link">
               ♿ Learning Differences
             </button>
           </div>
