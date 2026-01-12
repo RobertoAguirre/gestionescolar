@@ -2337,8 +2337,9 @@
               {/each}
             </select>
             <div class="padres-section">
-              <label>Padres (formato: nombre|email|password, uno por línea):</label>
+              <label for="padres-texto">Padres (formato: nombre|email|password, uno por línea):</label>
               <textarea 
+                id="padres-texto"
                 bind:value={newAlumno.padresTexto} 
                 placeholder="Ejemplo:&#10;Juan Pérez|juan@email.com|contraseña123&#10;María García|maria@email.com|contraseña456"
                 rows="3"
@@ -2675,8 +2676,8 @@
           
           <div class="asistencia-controls">
             <div class="control-group">
-              <label>Filtrar por grupo:</label>
-              <select bind:value={grupoSeleccionadoAsistencia} on:change={() => { loadAsistencia(); cargarEstadisticasGrupo(); }}>
+              <label for="grupo-asistencia-filter">Filtrar por grupo:</label>
+              <select id="grupo-asistencia-filter" bind:value={grupoSeleccionadoAsistencia} on:change={() => { loadAsistencia(); cargarEstadisticasGrupo(); }}>
                 <option value="">Todos los grupos</option>
                 {#each grupos.filter(g => g.activo !== false) as g}
                   <option value={String(g._id)}>{g.nombre}</option>
@@ -2684,8 +2685,8 @@
               </select>
             </div>
             <div class="control-group">
-              <label>Filtrar por alumno:</label>
-              <select bind:value={alumnoSeleccionadoAsistencia} on:change={() => { loadAsistencia(); cargarEstadisticasAlumno(); }}>
+              <label for="alumno-asistencia-filter">Filtrar por alumno:</label>
+              <select id="alumno-asistencia-filter" bind:value={alumnoSeleccionadoAsistencia} on:change={() => { loadAsistencia(); cargarEstadisticasAlumno(); }}>
                 <option value="">Todos los alumnos</option>
                 {#each alumnos.filter(a => a.activo !== false) as a}
                   <option value={String(a._id)}>{a.nombre}</option>
@@ -2699,8 +2700,8 @@
             <h3>{editingAsistencia ? 'Editar' : 'Nuevo'} Registro de Asistencia</h3>
             <div class="form-row">
               <div class="form-group">
-                <label>Alumno *</label>
-                <select bind:value={newAsistencia.alumnoId} required>
+                <label for="asistencia-alumno">Alumno *</label>
+                <select id="asistencia-alumno" bind:value={newAsistencia.alumnoId} required>
                   <option value="">Seleccionar alumno</option>
                   {#each alumnos.filter(a => a.activo !== false) as a}
                     <option value={String(a._id)}>{a.nombre}</option>
@@ -2708,8 +2709,8 @@
                 </select>
               </div>
               <div class="form-group">
-                <label>Grupo</label>
-                <select bind:value={newAsistencia.grupoId}>
+                <label for="asistencia-grupo">Grupo</label>
+                <select id="asistencia-grupo" bind:value={newAsistencia.grupoId}>
                   <option value="">Sin grupo</option>
                   {#each grupos.filter(g => g.activo !== false) as g}
                     <option value={String(g._id)}>{g.nombre}</option>
@@ -2719,12 +2720,12 @@
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label>Fecha *</label>
-                <input type="date" bind:value={newAsistencia.fecha} required />
+                <label for="asistencia-fecha">Fecha *</label>
+                <input id="asistencia-fecha" type="date" bind:value={newAsistencia.fecha} required />
               </div>
               <div class="form-group">
-                <label>Estado *</label>
-                <select bind:value={newAsistencia.estado} required>
+                <label for="asistencia-estado">Estado *</label>
+                <select id="asistencia-estado" bind:value={newAsistencia.estado} required>
                   <option value="presente">✅ Presente</option>
                   <option value="ausente">❌ Ausente</option>
                   <option value="tardanza">⏰ Tardanza</option>
@@ -2734,12 +2735,12 @@
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label>Período</label>
-                <input type="text" bind:value={newAsistencia.periodo} placeholder="general" />
+                <label for="asistencia-periodo">Período</label>
+                <input id="asistencia-periodo" type="text" bind:value={newAsistencia.periodo} placeholder="general" />
               </div>
               <div class="form-group">
-                <label>Observaciones</label>
-                <input type="text" bind:value={newAsistencia.observaciones} />
+                <label for="asistencia-observaciones">Observaciones</label>
+                <input id="asistencia-observaciones" type="text" bind:value={newAsistencia.observaciones} />
               </div>
             </div>
             <div class="form-actions">
@@ -2910,8 +2911,8 @@
                 
                 {#if respuestasRapidas.length > 0}
                   <div class="respuestas-rapidas-selector">
-                    <label>O usar respuesta rápida:</label>
-                    <select bind:value={newMensaje.respuestaRapidaId} on:change={(e) => usarRespuestaRapida(e.target.value)}>
+                    <label for="respuesta-rapida-select">O usar respuesta rápida:</label>
+                    <select id="respuesta-rapida-select" bind:value={newMensaje.respuestaRapidaId} on:change={(e) => usarRespuestaRapida(e.target.value)}>
                       <option value="">Selecciona una respuesta rápida</option>
                       {#each respuestasRapidas as r}
                         <option value={String(r._id)}>{r.titulo} ({r.categoria})</option>
@@ -3002,8 +3003,8 @@
           <h2>📈 Seguimiento de Progreso Académico</h2>
           
           <div class="progreso-selector">
-            <label>Seleccionar alumno:</label>
-            <select bind:value={alumnoProgresoSeleccionado} on:change={cargarProgreso}>
+            <label for="alumno-progreso-select">Seleccionar alumno:</label>
+            <select id="alumno-progreso-select" bind:value={alumnoProgresoSeleccionado} on:change={cargarProgreso}>
               <option value="">Selecciona un alumno</option>
               {#each alumnos.filter(a => a.activo !== false) as a}
                 <option value={String(a._id)}>{a.nombre}</option>
@@ -3192,8 +3193,8 @@
           <div class="riesgo-overview">
             <h3>⚠️ Alumnos en Riesgo Académico</h3>
             <div class="filtro-riesgo">
-              <label>Filtrar por nivel de riesgo:</label>
-              <select bind:value={filtroRiesgo} on:change={loadAlumnosEnRiesgo}>
+              <label for="filtro-riesgo-select">Filtrar por nivel de riesgo:</label>
+              <select id="filtro-riesgo-select" bind:value={filtroRiesgo} on:change={loadAlumnosEnRiesgo}>
                 <option value="todos">Todos</option>
                 <option value="alto">Alto Riesgo</option>
                 <option value="medio">Riesgo Medio</option>
@@ -3250,8 +3251,8 @@
           <div class="analisis-individual">
             <h3>📊 Análisis Individual</h3>
             <div class="analisis-selector">
-              <label>Seleccionar alumno para análisis detallado:</label>
-              <select bind:value={alumnoAnalisisSeleccionado} on:change={cargarAnalisisPredictivo}>
+              <label for="alumno-analisis-select">Seleccionar alumno para análisis detallado:</label>
+              <select id="alumno-analisis-select" bind:value={alumnoAnalisisSeleccionado} on:change={cargarAnalisisPredictivo}>
                 <option value="">Selecciona un alumno</option>
                 {#each alumnos.filter(a => a.activo !== false) as a}
                   <option value={String(a._id)}>{a.nombre}</option>
@@ -3400,26 +3401,26 @@
             <div class="reportes-params">
               {#if tipoReporte === 'mensual-uso'}
                 <div class="param-group">
-                  <label>Mes:</label>
-                  <input type="number" bind:value={reporteMes} min="1" max="12" />
+                  <label for="reporte-mes">Mes:</label>
+                  <input id="reporte-mes" type="number" bind:value={reporteMes} min="1" max="12" />
                 </div>
                 <div class="param-group">
-                  <label>Año:</label>
-                  <input type="number" bind:value={reporteAño} min="2020" max="2100" />
+                  <label for="reporte-año">Año:</label>
+                  <input id="reporte-año" type="number" bind:value={reporteAño} min="2020" max="2100" />
                 </div>
               {:else if tipoReporte === 'impacto'}
                 <div class="param-group">
-                  <label>Fecha Inicio:</label>
-                  <input type="date" bind:value={reporteFechaInicio} />
+                  <label for="reporte-fecha-inicio">Fecha Inicio:</label>
+                  <input id="reporte-fecha-inicio" type="date" bind:value={reporteFechaInicio} />
                 </div>
                 <div class="param-group">
-                  <label>Fecha Fin:</label>
-                  <input type="date" bind:value={reporteFechaFin} />
+                  <label for="reporte-fecha-fin">Fecha Fin:</label>
+                  <input id="reporte-fecha-fin" type="date" bind:value={reporteFechaFin} />
                 </div>
               {:else if tipoReporte === 'academico'}
                 <div class="param-group">
-                  <label>Período (opcional):</label>
-                  <input type="text" bind:value={reportePeriodo} placeholder="Dejar vacío para todos" />
+                  <label for="reporte-periodo">Período (opcional):</label>
+                  <input id="reporte-periodo" type="text" bind:value={reportePeriodo} placeholder="Dejar vacío para todos" />
                 </div>
               {/if}
             </div>
@@ -3460,12 +3461,12 @@
               <h3>{editingTarea ? 'Editar' : 'Nueva'} Tarea/Actividad</h3>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Título *</label>
-                  <input type="text" bind:value={newTarea.titulo} required />
+                  <label for="tarea-titulo">Título *</label>
+                  <input id="tarea-titulo" type="text" bind:value={newTarea.titulo} required />
                 </div>
                 <div class="form-group">
-                  <label>Tipo *</label>
-                  <select bind:value={newTarea.tipo} required>
+                  <label for="tarea-tipo">Tipo *</label>
+                  <select id="tarea-tipo" bind:value={newTarea.tipo} required>
                     <option value="tarea">📝 Tarea</option>
                     <option value="examen">📋 Examen</option>
                     <option value="evaluacion">📊 Evaluación</option>
@@ -3475,14 +3476,14 @@
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Descripción</label>
-                  <textarea bind:value={newTarea.descripcion} rows="3"></textarea>
+                  <label for="tarea-descripcion">Descripción</label>
+                  <textarea id="tarea-descripcion" bind:value={newTarea.descripcion} rows="3"></textarea>
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Maestro</label>
-                  <select bind:value={newTarea.maestroId}>
+                  <label for="tarea-maestro">Maestro</label>
+                  <select id="tarea-maestro" bind:value={newTarea.maestroId}>
                     <option value="">Sin asignar</option>
                     {#each maestros.filter(m => m.activo !== false) as m}
                       <option value={String(m._id)}>{m.nombre}</option>
@@ -3490,8 +3491,8 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Grupo</label>
-                  <select bind:value={newTarea.grupoId}>
+                  <label for="tarea-grupo">Grupo</label>
+                  <select id="tarea-grupo" bind:value={newTarea.grupoId}>
                     <option value="">Sin grupo</option>
                     {#each grupos.filter(g => g.activo !== false) as g}
                       <option value={String(g._id)}>{g.nombre}</option>
@@ -3501,12 +3502,12 @@
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Fecha Límite *</label>
-                  <input type="datetime-local" bind:value={newTarea.fechaLimite} required />
+                  <label for="tarea-fecha-limite">Fecha Límite *</label>
+                  <input id="tarea-fecha-limite" type="datetime-local" bind:value={newTarea.fechaLimite} required />
                 </div>
                 <div class="form-group">
-                  <label>Puntos</label>
-                  <input type="number" bind:value={newTarea.puntos} min="0" max="100" />
+                  <label for="tarea-puntos">Puntos</label>
+                  <input id="tarea-puntos" type="number" bind:value={newTarea.puntos} min="0" max="100" />
                 </div>
               </div>
               <div class="form-row">
@@ -3705,12 +3706,12 @@
           
           <div class="recursos-controls">
             <div class="control-group">
-              <label>Buscar:</label>
-              <input type="text" bind:value={busquedaRecursos} placeholder="Buscar recursos..." on:input={loadRecursos} />
+              <label for="busqueda-recursos">Buscar:</label>
+              <input id="busqueda-recursos" type="text" bind:value={busquedaRecursos} placeholder="Buscar recursos..." on:input={loadRecursos} />
             </div>
             <div class="control-group">
-              <label>Filtrar por materia:</label>
-              <select bind:value={materiaSeleccionadaRecursos} on:change={loadRecursos}>
+              <label for="materia-recursos-filter">Filtrar por materia:</label>
+              <select id="materia-recursos-filter" bind:value={materiaSeleccionadaRecursos} on:change={loadRecursos}>
                 <option value="">Todas las materias</option>
                 <option value="Matemáticas">Matemáticas</option>
                 <option value="Español">Español</option>
@@ -3769,12 +3770,12 @@
             <h3>{editingRecurso ? 'Editar' : 'Nuevo'} Recurso</h3>
             <div class="form-row">
               <div class="form-group">
-                <label>Título *</label>
-                <input type="text" bind:value={newRecurso.titulo} required />
+                <label for="recurso-titulo">Título *</label>
+                <input id="recurso-titulo" type="text" bind:value={newRecurso.titulo} required />
               </div>
               <div class="form-group">
-                <label>Tipo *</label>
-                <select bind:value={newRecurso.tipo} required>
+                <label for="recurso-tipo">Tipo *</label>
+                <select id="recurso-tipo" bind:value={newRecurso.tipo} required>
                   <option value="documento">📄 Documento</option>
                   <option value="enlace">🔗 Enlace</option>
                   <option value="video">🎥 Video</option>
@@ -3785,18 +3786,18 @@
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label>Descripción</label>
-                <textarea bind:value={newRecurso.descripcion} rows="3"></textarea>
+                <label for="recurso-descripcion">Descripción</label>
+                <textarea id="recurso-descripcion" bind:value={newRecurso.descripcion} rows="3"></textarea>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label>Materia</label>
-                <input type="text" bind:value={newRecurso.materia} placeholder="Ej: Matemáticas, Español..." />
+                <label for="recurso-materia">Materia</label>
+                <input id="recurso-materia" type="text" bind:value={newRecurso.materia} placeholder="Ej: Matemáticas, Español..." />
               </div>
               <div class="form-group">
-                <label>Maestro</label>
-                <select bind:value={newRecurso.maestroId}>
+                <label for="recurso-maestro">Maestro</label>
+                <select id="recurso-maestro" bind:value={newRecurso.maestroId}>
                   <option value="">Sin asignar</option>
                   {#each maestros.filter(m => m.activo !== false) as m}
                     <option value={String(m._id)}>{m.nombre}</option>
@@ -3807,20 +3808,20 @@
             <div class="form-row">
               {#if newRecurso.tipo === 'enlace'}
                 <div class="form-group">
-                  <label>URL *</label>
-                  <input type="url" bind:value={newRecurso.url} required />
+                  <label for="recurso-url">URL *</label>
+                  <input id="recurso-url" type="url" bind:value={newRecurso.url} required />
                 </div>
               {:else}
                 <div class="form-group">
-                  <label>Archivo {editingRecurso ? '(dejar vacío para mantener actual)' : '*'}</label>
+                  <label for="archivo-recurso">Archivo {editingRecurso ? '(dejar vacío para mantener actual)' : '*'}</label>
                   <input type="file" id="archivo-recurso" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.mp4,.mp3,.zip" />
                 </div>
               {/if}
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label>Tags (separados por comas)</label>
-                <input type="text" bind:value={newRecurso.tags} placeholder="Ej: algebra, ejercicios, practica" />
+                <label for="recurso-tags">Tags (separados por comas)</label>
+                <input id="recurso-tags" type="text" bind:value={newRecurso.tags} placeholder="Ej: algebra, ejercicios, practica" />
               </div>
               <div class="form-group">
                 <label>
@@ -3910,8 +3911,8 @@
 
 <!-- Modal de perfil de accesibilidad -->
 {#if editingPerfilAccesibilidad}
-  <div class="modal-overlay" on:click={() => editingPerfilAccesibilidad = null}>
-    <div class="modal-content" on:click|stopPropagation role="dialog" aria-labelledby="modal-title">
+  <div class="modal-overlay" role="button" tabindex="0" on:click={() => editingPerfilAccesibilidad = null} on:keydown={(e) => e.key === 'Escape' && (editingPerfilAccesibilidad = null)}>
+    <div class="modal-content" on:click|stopPropagation role="dialog" aria-labelledby="modal-title" on:keydown|stopPropagation>
       <h2 id="modal-title">Perfil de Accesibilidad: {editingPerfilAccesibilidad.nombre}</h2>
       <form on:submit|preventDefault={guardarPerfilAccesibilidad} class="form">
         <label>
@@ -3931,8 +3932,9 @@
           Respuestas Cortas y Claras
         </label>
         <div>
-          <label>Necesidades Especiales (separadas por comas):</label>
+          <label for="necesidades-especiales">Necesidades Especiales (separadas por comas):</label>
           <input 
+            id="necesidades-especiales"
             type="text" 
             bind:value={perfilAccesibilidadEdit.necesidadesEspeciales} 
             placeholder="Ej: dislexia, TDAH, autismo"
@@ -4473,11 +4475,6 @@
     margin-bottom: 25px;
   }
 
-  .encuestas-stats h3 {
-    margin: 0 0 20px 0;
-    color: #333;
-  }
-
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -4489,13 +4486,6 @@
     padding: 15px;
     background: #f8f9fa;
     border-radius: 8px;
-  }
-
-  .encuestas-filters label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #495057;
   }
 
   .encuestas-filters select {

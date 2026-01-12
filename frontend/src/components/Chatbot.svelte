@@ -29,7 +29,7 @@
   onMount(async () => {
     messages = [{
       role: 'assistant',
-      content: '¡Hola! Soy tu asistente virtual. Puedo ayudarte con horarios, eventos, desempeño escolar, planes de pago y más. ¿En qué puedo ayudarte?'
+      content: '¡Hola! Soy tu asistente virtual. Puedo ayudarte con:\n\n📅 Horarios de clases y actividades\n🎉 Eventos escolares\n📊 Desempeño académico\n💳 Planes de pago y cobros\n👨‍🏫 Información sobre maestros y grupos\n📝 Agendamiento de citas\n\n💡 Puedes hacer preguntas generales sobre la escuela sin seleccionar un alumno, o seleccionar un alumno específico para consultas personalizadas.\n\n¿En qué puedo ayudarte?'
     }];
     await loadMaestrosYAlumnos();
   });
@@ -152,7 +152,16 @@
         })
       });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Error de conexión' }));
+        throw new Error(errorData.error || `Error ${response.status}`);
+      }
+
       const data = await response.json();
+      if (!data.message) {
+        throw new Error('Respuesta inválida del servidor');
+      }
+
       const assistantMsg = { role: 'assistant', content: data.message };
       messages = [...messages, assistantMsg];
       history.push(assistantMsg);
@@ -351,8 +360,8 @@
       </label>
     </div>
     <div class="alumno-selector">
-      <label>Seleccionar alumno (para cargar perfil automático):</label>
-      <select bind:value={alumnoSeleccionado} on:change={handleAlumnoChange}>
+      <label for="alumno-select">Seleccionar alumno (para cargar perfil automático):</label>
+      <select id="alumno-select" bind:value={alumnoSeleccionado} on:change={handleAlumnoChange}>
         <option value="">Sin alumno específico</option>
         {#each alumnos as a}
           <option value={String(a._id)}>{a.nombre}</option>

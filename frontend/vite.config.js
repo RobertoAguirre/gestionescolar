@@ -5,12 +5,9 @@ export default defineConfig({
   plugins: [svelte()],
   server: {
     port: 5173,
-    proxy: process.env.NODE_ENV === 'development' ? {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true
-      }
-    } : {}
+    // Proxy deshabilitado - el frontend usa API_URL que apunta a Render
+    // Si necesitas usar backend local, configura VITE_API_URL=http://localhost:3000
+    proxy: {}
   }
 });
 
