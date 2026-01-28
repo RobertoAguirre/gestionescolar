@@ -3,7 +3,7 @@ import multer from 'multer';
 import { ObjectId } from 'mongodb';
 import { getDB } from '../utils/db.js';
 import { getBotKnowledge } from '../utils/knowledge.js';
-import { generateResponse } from '../utils/ai-provider.js';
+import { generateResponse, ANTHROPIC_MODEL } from '../utils/ai-provider.js';
 import { getEscuelaId } from '../utils/multi-escuela.js';
 import dotenv from 'dotenv';
 import fs from 'fs';
@@ -166,7 +166,7 @@ router.post('/api/chat/image', upload.single('image'), async (req, res) => {
     });
 
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: ANTHROPIC_MODEL,
       max_tokens: perfilFinal.respuestasCortas ? 512 : 1024,
       system: systemPrompt,
       messages: [{

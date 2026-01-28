@@ -8,6 +8,11 @@ dotenv.config();
 
 const AI_PROVIDER = process.env.AI_PROVIDER || 'claude'; // 'claude' o 'gemini'
 
+// Modelo por defecto para Claude (configurable por entorno)
+// Usa ANTHROPIC_MODEL si está definido, si no, cae en un modelo estable conocido.
+export const ANTHROPIC_MODEL =
+  process.env.ANTHROPIC_MODEL || 'claude-3-sonnet-20240229';
+
 // Configuración de Claude
 let anthropicClient = null;
 if (AI_PROVIDER === 'claude' && process.env.ANTHROPIC_API_KEY) {
@@ -46,7 +51,7 @@ export async function generateResponse(messages, systemPrompt, options = {}) {
   try {
     if (AI_PROVIDER === 'claude' && anthropicClient) {
       const response = await anthropicClient.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: ANTHROPIC_MODEL,
         max_tokens: maxTokens,
         temperature: temperature,
         system: adaptedSystemPrompt,
