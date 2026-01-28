@@ -388,40 +388,42 @@
   </div>
 
   {#if showCitaForm}
-    <div class="cita-form">
-      <h3>📅 Agendar Cita</h3>
-      <form on:submit={submitCita}>
-        <input type="text" name="nombre" placeholder="Nombre completo" required />
-        <input type="email" name="email" placeholder="Email" required />
-        <input type="tel" name="telefono" placeholder="Teléfono" />
-        <select name="tipo" bind:this={tipoCitaSelect} required on:change={handleTipoChange}>
-          <option value="">Selecciona tipo</option>
-          <option value="directivo">Directivo</option>
-          <option value="maestro">Maestro</option>
-        </select>
-        {#if showMaestroSelect}
-          <select name="maestroId" bind:this={maestroSelect} required>
-            <option value="">Selecciona un maestro</option>
-            {#each maestros as m}
-              <option value={String(m._id)}>{m.nombre} {m.especialidad ? `- ${m.especialidad}` : ''}</option>
+    <div class="modal">
+      <div class="modal-content">
+        <h3>📅 Agendar Cita</h3>
+        <form on:submit={submitCita}>
+          <input type="text" name="nombre" placeholder="Nombre completo" required />
+          <input type="email" name="email" placeholder="Email" required />
+          <input type="tel" name="telefono" placeholder="Teléfono" />
+          <select name="tipo" bind:this={tipoCitaSelect} required on:change={handleTipoChange}>
+            <option value="">Selecciona tipo</option>
+            <option value="directivo">Directivo</option>
+            <option value="maestro">Maestro</option>
+          </select>
+          {#if showMaestroSelect}
+            <select name="maestroId" bind:this={maestroSelect} required>
+              <option value="">Selecciona un maestro</option>
+              {#each maestros as m}
+                <option value={String(m._id)}>{m.nombre} {m.especialidad ? `- ${m.especialidad}` : ''}</option>
+              {/each}
+            </select>
+          {/if}
+          <select name="alumnoId">
+            <option value="">Selecciona un alumno (opcional)</option>
+            {#each alumnos as a}
+              <option value={String(a._id)}>{a.nombre}</option>
             {/each}
           </select>
-        {/if}
-        <select name="alumnoId">
-          <option value="">Selecciona un alumno (opcional)</option>
-          {#each alumnos as a}
-            <option value={String(a._id)}>{a.nombre}</option>
-          {/each}
-        </select>
-        <input type="datetime-local" name="fecha" required />
-        <textarea name="motivo" placeholder="Motivo de la cita" required></textarea>
-        <div class="form-actions">
-          <button type="submit">Agendar</button>
-          <button type="button" on:click={() => showCitaForm = false}>Cancelar</button>
-        </div>
-    </form>
-  </div>
-{/if}
+          <input type="datetime-local" name="fecha" required />
+          <textarea name="motivo" placeholder="Motivo de la cita" required></textarea>
+          <div class="form-actions">
+            <button type="submit">Agendar</button>
+            <button type="button" on:click={() => showCitaForm = false}>Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {/if}
 
 {#if showEncuestaForm}
   <div class="modal">
