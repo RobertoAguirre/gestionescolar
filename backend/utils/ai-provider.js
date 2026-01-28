@@ -9,9 +9,10 @@ dotenv.config();
 const AI_PROVIDER = process.env.AI_PROVIDER || 'claude'; // 'claude' o 'gemini'
 
 // Modelo por defecto para Claude (configurable por entorno)
-// Usa ANTHROPIC_MODEL si está definido; si no, cae en Claude Sonnet 3.7.
+// Usa ANTHROPIC_MODEL si está definido; si no, usa el alias recomendado de Sonnet 4.5.
+// Ver: https://platform.claude.com/docs/en/api/models/list
 export const ANTHROPIC_MODEL =
-  process.env.ANTHROPIC_MODEL || 'claude-3-7-sonnet';
+  process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5';
 
 // Configuración de Claude
 let anthropicClient = null;
