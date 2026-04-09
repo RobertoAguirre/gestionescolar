@@ -71,6 +71,68 @@ function calcularRiesgoAcademico(calificaciones, asistencia, objetivos) {
   };
 }
 
+// GET - Lista de alumnos en riesgo (DEBE ir antes de /:alumnoId)
+router.get('/api/admin/analisis-predictivo/riesgo', adminAuth, async (req, res) => {
+  try {
+    const { nivelRiesgo, limite = 50 } = req.query;
+    const db = getDB();
+    
+    const alumnos = await db.collection('alumnos')
+      .find({ activo: true })
+      .limit(parseInt(limite))
+      .toArray();
+    
+    const alumnosEnRiesgo = [];
+    
+    for (const alumno of alumnos) {
+      const calificaciones = await db.collection('calificaciones')
+        .find({ alumnoId: alumno._id })
+        .toArray();
+      
+      const registrosAsistencia = await db.collection('asistencia')
+        .find({ alumnoId: alumno._id })
+        .toArray();
+      
+      const asistencia = {
+        total: registrosAsistencia.length,
+        presente: registrosAsistencia.filter(r => r.estado === 'presente').length,
+        justificado: registrosAsistencia.filter(r => r.estado === 'justificado').length
+      };
+      
+      const objetivos = await db.collection('objetivos')
+        .find({ alumnoId: alumno._id })
+        .toArray();
+      
+      const riesgo = calcularRiesgoAcademico(calificaciones, asistencia, objetivos);
+      
+      if (!nivelRiesgo || riesgo.nivelRiesgo === nivelRiesgo) {
+        alumnosEnRiesgo.push({
+          alumnoId: alumno._id,
+          alumnoNombre: alumno.nombre,
+          grupoId: alumno.grupoId,
+          riesgo: {
+            puntaje: riesgo.puntajeRiesgo,
+            nivel: riesgo.nivelRiesgo
+          },
+          promedio: calificaciones.length > 0
+            ? Math.round((calificaciones.reduce((sum, cal) => sum + cal.calificacion, 0) / calificaciones.length) * 10) / 10
+            : 0
+        });
+      }
+    }
+    
+    alumnosEnRiesgo.sort((a, b) => b.riesgo.puntaje - a.riesgo.puntaje);
+    
+    res.json({
+      total: alumnosEnRiesgo.length,
+      alumnos: alumnosEnRiesgo
+    });
+  } catch (error) {
+    console.error('Error obteniendo alumnos en riesgo:', error);
+    res.status(500).json({ error: 'Error obteniendo alumnos en riesgo' });
+  }
+});
+
 // GET - Análisis predictivo de un alumno
 router.get('/api/admin/analisis-predictivo/:alumnoId', adminAuth, async (req, res) => {
   try {
@@ -208,69 +270,6 @@ Responde SOLO con el JSON, sin texto adicional.`;
   } catch (error) {
     console.error('Error en análisis predictivo:', error);
     res.status(500).json({ error: 'Error en análisis predictivo' });
-  }
-});
-
-// GET - Lista de alumnos en riesgo
-router.get('/api/admin/analisis-predictivo/riesgo', adminAuth, async (req, res) => {
-  try {
-    const { nivelRiesgo, limite = 50 } = req.query;
-    const db = getDB();
-    
-    const alumnos = await db.collection('alumnos')
-      .find({ activo: true })
-      .limit(parseInt(limite))
-      .toArray();
-    
-    const alumnosEnRiesgo = [];
-    
-    for (const alumno of alumnos) {
-      const calificaciones = await db.collection('calificaciones')
-        .find({ alumnoId: alumno._id })
-        .toArray();
-      
-      const registrosAsistencia = await db.collection('asistencia')
-        .find({ alumnoId: alumno._id })
-        .toArray();
-      
-      const asistencia = {
-        total: registrosAsistencia.length,
-        presente: registrosAsistencia.filter(r => r.estado === 'presente').length,
-        justificado: registrosAsistencia.filter(r => r.estado === 'justificado').length
-      };
-      
-      const objetivos = await db.collection('objetivos')
-        .find({ alumnoId: alumno._id })
-        .toArray();
-      
-      const riesgo = calcularRiesgoAcademico(calificaciones, asistencia, objetivos);
-      
-      if (!nivelRiesgo || riesgo.nivelRiesgo === nivelRiesgo) {
-        alumnosEnRiesgo.push({
-          alumnoId: alumno._id,
-          alumnoNombre: alumno.nombre,
-          grupoId: alumno.grupoId,
-          riesgo: {
-            puntaje: riesgo.puntajeRiesgo,
-            nivel: riesgo.nivelRiesgo
-          },
-          promedio: calificaciones.length > 0
-            ? Math.round((calificaciones.reduce((sum, cal) => sum + cal.calificacion, 0) / calificaciones.length) * 10) / 10
-            : 0
-        });
-      }
-    }
-    
-    // Ordenar por puntaje de riesgo (mayor a menor)
-    alumnosEnRiesgo.sort((a, b) => b.riesgo.puntaje - a.riesgo.puntaje);
-    
-    res.json({
-      total: alumnosEnRiesgo.length,
-      alumnos: alumnosEnRiesgo
-    });
-  } catch (error) {
-    console.error('Error obteniendo alumnos en riesgo:', error);
-    res.status(500).json({ error: 'Error obteniendo alumnos en riesgo' });
   }
 });
 

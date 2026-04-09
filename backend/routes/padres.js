@@ -1,13 +1,13 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
 import { getDB } from '../utils/db.js';
-import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 const router = express.Router();
 
-// Función para generar token de sesión
-function generarToken() {
-  return crypto.randomBytes(32).toString('hex');
+function getJwtSecret() {
+  return process.env.JWT_SECRET || '';
 }
 
 // POST - Login de padre
@@ -21,40 +21,60 @@ router.post('/api/padres/login', async (req, res) => {
     
     const db = getDB();
     
-    // Buscar padre por email
-    const alumnos = await db.collection('alumnos').find({ activo: true }).toArray();
-    let padreEncontrado = null;
-    let alumnoAsociado = null;
-    
-    for (const alumno of alumnos) {
-      if (alumno.padres && Array.isArray(alumno.padres)) {
-        const padre = alumno.padres.find(p => p.email === email);
-        if (padre) {
-          // Verificar contraseña (simple, se puede mejorar con hash)
-          if (padre.password === password) {
-            padreEncontrado = padre;
-            alumnoAsociado = alumno;
-            break;
-          }
-        }
-      }
+    const secret = getJwtSecret();
+    if (!secret) {
+      return res.status(500).json({ error: 'JWT_SECRET no configurado' });
     }
-    
+
+    // Buscar alumno/padre por email (evita escanear toda la colección)
+    const alumnoAsociado = await db.collection('alumnos').findOne({
+      activo: true,
+      'padres.email': email
+    });
+
+    if (!alumnoAsociado || !Array.isArray(alumnoAsociado.padres)) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const padreIndex = alumnoAsociado.padres.findIndex(p => p.email === email);
+    const padreEncontrado = padreIndex >= 0 ? alumnoAsociado.padres[padreIndex] : null;
+
     if (!padreEncontrado) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
-    
-    // Generar token de sesión
-    const token = generarToken();
-    const sesion = {
-      padreId: padreEncontrado.email,
-      alumnoId: alumnoAsociado._id,
-      token,
-      timestamp: new Date(),
-      expira: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 días
-    };
-    
-    await db.collection('sesiones_padres').insertOne(sesion);
+
+    let isValidPassword = false;
+    if (padreEncontrado.passwordHash) {
+      isValidPassword = await bcrypt.compare(password, padreEncontrado.passwordHash);
+    } else if (padreEncontrado.password) {
+      isValidPassword = padreEncontrado.password === password;
+    }
+
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    // Migración automática: si aún tenía password plano, se guarda hash
+    if (!padreEncontrado.passwordHash && padreEncontrado.password) {
+      const hash = await bcrypt.hash(password, 10);
+      await db.collection('alumnos').updateOne(
+        { _id: alumnoAsociado._id, 'padres.email': email },
+        {
+          $set: { 'padres.$.passwordHash': hash },
+          $unset: { 'padres.$.password': '' }
+        }
+      );
+    }
+
+    const token = jwt.sign(
+      {
+        role: 'padre',
+        padreId: padreEncontrado.email,
+        alumnoId: String(alumnoAsociado._id)
+      },
+      secret,
+      { expiresIn: '7d' }
+    );
     
     res.json({
       success: true,
@@ -77,24 +97,35 @@ router.post('/api/padres/login', async (req, res) => {
 // Middleware de autenticación para padres
 export async function authPadre(req, res, next) {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+
     if (!token) {
       return res.status(401).json({ error: 'Token requerido' });
     }
-    
-    const db = getDB();
-    const sesion = await db.collection('sesiones_padres').findOne({
-      token,
-      expira: { $gt: new Date() }
-    });
-    
-    if (!sesion) {
+
+    const secret = getJwtSecret();
+    if (!secret) {
+      return res.status(500).json({ error: 'JWT_SECRET no configurado' });
+    }
+
+    let payload = null;
+    try {
+      payload = jwt.verify(token, secret);
+    } catch (_jwtError) {
       return res.status(401).json({ error: 'Token inválido o expirado' });
     }
-    
-    req.padreId = sesion.padreId;
-    req.alumnoId = sesion.alumnoId;
+
+    if (!payload || payload.role !== 'padre' || !payload.padreId || !payload.alumnoId) {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    if (!ObjectId.isValid(payload.alumnoId)) {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    req.padreId = payload.padreId;
+    req.alumnoId = new ObjectId(payload.alumnoId);
     next();
   } catch (error) {
     console.error('Error en autenticación de padre:', error);
@@ -375,11 +406,13 @@ router.post('/api/padres/citas', authPadre, async (req, res) => {
 // POST - Logout
 router.post('/api/padres/logout', authPadre, async (req, res) => {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    const db = getDB();
-    
-    await db.collection('sesiones_padres').deleteOne({ token });
-    
+    // JWT es stateless; en logout cliente elimina token localmente.
+    // Se mantiene limpieza de sesiones legacy si existieran.
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    if (token) {
+      const db = getDB();
+      await db.collection('sesiones_padres').deleteOne({ token });
+    }
     res.json({ success: true });
   } catch (error) {
     console.error('Error en logout:', error);

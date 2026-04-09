@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { API_URL } from '../config.js';
+  import { fetchAPI } from '../config.js';
   
   let messages = [];
   let inputMessage = '';
@@ -41,7 +41,7 @@
     }
     
     try {
-      const res = await fetch(`${API_URL}/api/encuestas/satisfaccion`, {
+      const res = await fetchAPI('/api/encuestas/satisfaccion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -72,8 +72,8 @@
   async function loadMaestrosYAlumnos() {
     try {
       const [maestrosRes, alumnosRes] = await Promise.all([
-        fetch(`${API_URL}/api/maestros`),
-        fetch(`${API_URL}/api/alumnos`)
+        fetchAPI('/api/maestros'),
+        fetchAPI('/api/alumnos')
       ]);
       maestros = await maestrosRes.json();
       alumnos = await alumnosRes.json();
@@ -89,7 +89,7 @@
 
   async function cargarPerfilAccesibilidad(alumnoId) {
     try {
-      const response = await fetch(`${API_URL}/api/admin/accesibilidad/${alumnoId}`, {
+      const response = await fetchAPI(`/api/admin/accesibilidad/${alumnoId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
         }
@@ -141,7 +141,7 @@
         respuestasCortas: respuestasCortas
       };
 
-      const response = await fetch(`${API_URL}/api/chat`, {
+      const response = await fetchAPI('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -210,7 +210,7 @@
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/chat/image`, {
+      const response = await fetchAPI('/api/chat/image', {
         method: 'POST',
         body: formData
       });
@@ -292,7 +292,7 @@
     };
 
     try {
-      const response = await fetch(`${API_URL}/api/citas`, {
+      const response = await fetchAPI('/api/citas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(citaData)
@@ -783,6 +783,80 @@
 
   .feedback-button:hover {
     background: #ffb300;
+  }
+
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  .modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #333;
+  }
+
+  .modal-content label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+    color: #555;
+  }
+
+  .modal-content input,
+  .modal-content select,
+  .modal-content textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 16px;
+  }
+
+  .modal-actions button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .modal-actions button[type="submit"] {
+    background: #667eea;
+    color: white;
+  }
+
+  .modal-actions button[type="button"] {
+    background: #e0e0e0;
+    color: #333;
   }
 </style>
 

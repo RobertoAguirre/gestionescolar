@@ -1,5 +1,4 @@
 import { getDB } from './db.js';
-import { ObjectId } from 'mongodb';
 import { addEscuelaFilter } from './multi-escuela.js';
 
 export async function getBotKnowledge(escuelaId = null) {

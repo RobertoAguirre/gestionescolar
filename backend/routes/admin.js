@@ -1,7 +1,7 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
 import { getDB } from '../utils/db.js';
-import { adminAuth } from '../utils/auth.js';
+import { adminAuth, createAdminToken, verifyAdminCredentials } from '../utils/auth.js';
 import { getEscuelaId, addEscuelaFilter } from '../utils/multi-escuela.js';
 import dotenv from 'dotenv';
 
@@ -49,13 +49,28 @@ const router = express.Router();
 
 // Login admin
 router.post('/api/admin/login', async (req, res) => {
-  const { password } = req.body;
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-  
-  if (password === adminPassword) {
-    res.json({ success: true, token: adminPassword });
-  } else {
-    res.status(401).json({ error: 'Contraseña incorrecta' });
+  try {
+    const { password } = req.body;
+    const escuelaId = getEscuelaId(req);
+
+    if (!password) {
+      return res.status(400).json({ error: 'Contraseña requerida' });
+    }
+
+    const authResult = await verifyAdminCredentials(password, escuelaId);
+    if (!authResult) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const token = createAdminToken(authResult);
+    return res.json({
+      success: true,
+      token,
+      role: authResult.role
+    });
+  } catch (error) {
+    console.error('Error en login admin:', error);
+    return res.status(500).json({ error: 'Error en login admin' });
   }
 });
 

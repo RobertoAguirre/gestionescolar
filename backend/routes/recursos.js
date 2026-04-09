@@ -308,7 +308,7 @@ router.delete('/api/admin/recursos/:id', adminAuth, async (req, res) => {
 });
 
 // POST - Compartir recurso (por maestro)
-router.post('/api/maestros/recursos', upload.single('archivo'), async (req, res) => {
+router.post('/api/maestros/recursos', adminAuth, upload.single('archivo'), async (req, res) => {
   try {
     const { maestroId, titulo, descripcion, tipo, materia, url, learningDifferences, tags } = req.body;
     
@@ -494,8 +494,7 @@ Genera recomendaciones específicas de recursos que sean más útiles. Responde 
     
     let recomendaciones = [];
     try {
-      const content = response.content[0].text;
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      const jsonMatch = response.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         recomendaciones = JSON.parse(jsonMatch[0]);
       }

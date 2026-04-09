@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { API_URL } from '../config.js';
+  import { fetchAPI } from '../config.js';
   
   let isAuthenticated = false;
   let token = '';
@@ -32,7 +32,7 @@
 
   async function verificarSesion() {
     try {
-      const res = await fetch(`${API_URL}/api/padres/mi-hijo`, {
+      const res = await fetchAPI('/api/padres/mi-hijo', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -62,7 +62,7 @@
     
     isLoading = true;
     try {
-      const res = await fetch(`${API_URL}/api/padres/login`, {
+      const res = await fetchAPI('/api/padres/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: loginEmail, password: loginPassword })
@@ -92,7 +92,7 @@
 
   async function logout() {
     try {
-      await fetch(`${API_URL}/api/padres/logout`, {
+      await fetchAPI('/api/padres/logout', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -132,7 +132,7 @@
 
   async function cargarCalificaciones() {
     try {
-      const res = await fetch(`${API_URL}/api/padres/calificaciones`, {
+      const res = await fetchAPI('/api/padres/calificaciones', {
         headers: getAuthHeaders()
       });
       if (res.ok) {
@@ -146,7 +146,7 @@
 
   async function cargarProgreso() {
     try {
-      const res = await fetch(`${API_URL}/api/padres/progreso`, {
+      const res = await fetchAPI('/api/padres/progreso', {
         headers: getAuthHeaders()
       });
       if (res.ok) {
@@ -159,7 +159,7 @@
 
   async function cargarEventos() {
     try {
-      const res = await fetch(`${API_URL}/api/padres/eventos`, {
+      const res = await fetchAPI('/api/padres/eventos', {
         headers: getAuthHeaders()
       });
       if (res.ok) {
@@ -172,7 +172,7 @@
 
   async function cargarCitas() {
     try {
-      const res = await fetch(`${API_URL}/api/padres/citas`, {
+      const res = await fetchAPI('/api/padres/citas', {
         headers: getAuthHeaders()
       });
       if (res.ok) {
@@ -185,7 +185,7 @@
 
   async function cargarHistorial() {
     try {
-      const res = await fetch(`${API_URL}/api/padres/historial`, {
+      const res = await fetchAPI('/api/padres/historial', {
         headers: getAuthHeaders()
       });
       if (res.ok) {
@@ -199,7 +199,7 @@
 
   async function cargarMaestros() {
     try {
-      const res = await fetch(`${API_URL}/api/maestros`);
+      const res = await fetchAPI('/api/maestros');
       if (res.ok) {
         maestros = await res.json();
       }
@@ -215,7 +215,7 @@
     }
     
     try {
-      const res = await fetch(`${API_URL}/api/padres/citas`, {
+      const res = await fetchAPI('/api/padres/citas', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(newCita)

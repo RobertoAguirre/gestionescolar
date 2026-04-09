@@ -2,6 +2,7 @@ import express from 'express';
 import { ObjectId } from 'mongodb';
 import { getDB } from '../utils/db.js';
 import { adminAuth } from '../utils/auth.js';
+import { authPadre } from './padres.js';
 import { getEscuelaId, addEscuelaFilter } from '../utils/multi-escuela.js';
 import { crearNotificacionAutomatica } from './admin.js';
 
@@ -207,7 +208,7 @@ router.delete('/api/admin/tareas/:id', adminAuth, async (req, res) => {
 });
 
 // POST - Asignar tarea a alumnos (por maestro)
-router.post('/api/maestros/tareas', async (req, res) => {
+router.post('/api/maestros/tareas', adminAuth, async (req, res) => {
   try {
     const { maestroId, grupoId, titulo, descripcion, tipo, alumnos, fechaLimite, puntos } = req.body;
     
@@ -246,10 +247,11 @@ router.post('/api/maestros/tareas', async (req, res) => {
 });
 
 // POST - Entregar tarea (por alumno)
-router.post('/api/tareas/:id/entregar', async (req, res) => {
+router.post('/api/tareas/:id/entregar', authPadre, async (req, res) => {
   try {
     const { id } = req.params;
-    const { alumnoId, archivo, comentarios } = req.body;
+    const { archivo, comentarios } = req.body;
+    const alumnoId = String(req.alumnoId);
     
     if (!ObjectId.isValid(id) || !alumnoId || !ObjectId.isValid(alumnoId)) {
       return res.status(400).json({ error: 'IDs inválidos' });
@@ -368,12 +370,13 @@ router.put('/api/admin/tareas/:id/calificar', adminAuth, async (req, res) => {
 });
 
 // GET - Tareas pendientes por alumno
-router.get('/api/tareas/pendientes/:alumnoId', async (req, res) => {
+router.get('/api/tareas/pendientes/:alumnoId', authPadre, async (req, res) => {
   try {
-    const { alumnoId } = req.params;
+    const { alumnoId: alumnoIdParam } = req.params;
+    const alumnoId = String(req.alumnoId);
     const escuelaId = getEscuelaId(req);
     
-    if (!ObjectId.isValid(alumnoId)) {
+    if (!ObjectId.isValid(alumnoIdParam) || alumnoIdParam !== alumnoId) {
       return res.status(400).json({ error: 'ID de alumno inválido' });
     }
     

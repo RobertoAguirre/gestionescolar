@@ -92,7 +92,7 @@ async function generarReporteImpacto(escuelaId, fechaInicio, fechaFin) {
     timestamp: { $gte: fechaInicio, $lte: fechaFin }
   }, escuelaId);
   
-  const encuestas = await db.collection('encuestas_satisfaccion')
+  const encuestas = await db.collection('encuestas')
     .find(queryEncuestas)
     .toArray();
   

@@ -22,7 +22,7 @@ router.get('/api/maestros', async (req, res) => {
   }
 });
 
-// GET - Obtener alumnos activos (público para chatbot)
+// GET - Obtener alumnos activos (público para chatbot, campos limitados)
 router.get('/api/alumnos', async (req, res) => {
   try {
     const db = getDB();
@@ -30,7 +30,7 @@ router.get('/api/alumnos', async (req, res) => {
     const query = addEscuelaFilter({ activo: true }, escuelaId);
     
     const alumnos = await db.collection('alumnos')
-      .find(query)
+      .find(query, { projection: { nombre: 1, grupoId: 1, activo: 1 } })
       .sort({ nombre: 1 })
       .toArray();
     res.json(alumnos);

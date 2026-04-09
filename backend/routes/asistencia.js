@@ -275,7 +275,7 @@ router.get('/api/admin/asistencia/alertas', adminAuth, async (req, res) => {
 });
 
 // POST - Toma de asistencia por maestros (endpoint simplificado para maestros)
-router.post('/api/maestros/asistencia', async (req, res) => {
+router.post('/api/maestros/asistencia', adminAuth, async (req, res) => {
   try {
     const { maestroId, grupoId, fecha, alumnos } = req.body; // alumnos: [{ alumnoId, estado, observaciones }]
     

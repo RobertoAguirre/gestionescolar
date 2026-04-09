@@ -103,6 +103,12 @@
   let grupoSeleccionadoAsistencia = '';
   let alumnoSeleccionadoAsistencia = '';
 
+  // Encuestas y feedback
+  let encuestas = [];
+  let estadisticasEncuestas = null;
+  let filtroEncuestas = 'todos';
+  let newFeedbackMaestro = { maestroId: '', eficiencia: '', tiempoAhorrado: '', casosExitosos: '', comentarios: '' };
+
   onMount(() => {
     const token = localStorage.getItem('adminToken');
     const savedEscuelaId = localStorage.getItem('escuelaId');
@@ -1898,7 +1904,7 @@
           </button>
           <button
             class:active={activeTab === 'encuestas'}
-            on:click={() => activeTab = 'encuestas'}
+            on:click={() => { activeTab = 'encuestas'; loadEncuestas(); loadEstadisticasEncuestas(); }}
           >
             📋 Encuestas y Feedback
           </button>
@@ -1913,6 +1919,12 @@
             on:click={() => { activeTab = 'tareas'; loadTareas(); loadCalendarioAcademico(); loadFechasImportantes(); }}
           >
             📝 Tareas y Actividades
+          </button>
+          <button
+            class:active={activeTab === 'recursos'}
+            on:click={() => { activeTab = 'recursos'; loadRecursos(); }}
+          >
+            📚 Recursos
           </button>
         </nav>
       </aside>
@@ -3446,13 +3458,104 @@
         </div>
       {/if}
 
+      {#if activeTab === 'encuestas'}
+        <div class="section">
+          <h2>📋 Encuestas y Feedback</h2>
+          
+          <div class="encuestas-filters">
+            <label for="filtro-encuestas">Filtrar por tipo:</label>
+            <select id="filtro-encuestas" bind:value={filtroEncuestas} on:change={() => { loadEncuestas(); }}>
+              <option value="todos">Todos</option>
+              <option value="satisfaccion">Satisfacción</option>
+              <option value="sugerencia">Sugerencias</option>
+              <option value="feedback_maestro">Feedback Maestros</option>
+            </select>
+          </div>
+
+          {#if estadisticasEncuestas}
+            <div class="encuestas-stats">
+              <div class="stat-card">
+                <span class="stat-number">{estadisticasEncuestas.total || 0}</span>
+                <span class="stat-label">Total Encuestas</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-number">{estadisticasEncuestas.promedioSatisfaccion || 'N/A'}</span>
+                <span class="stat-label">Promedio Satisfacción</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-number">{estadisticasEncuestas.totalSugerencias || 0}</span>
+                <span class="stat-label">Sugerencias</span>
+              </div>
+            </div>
+          {/if}
+
+          <div class="encuestas-list">
+            {#each encuestas as encuesta}
+              <div class="card">
+                <div class="card-header">
+                  <span>{getTipoEncuestaIcono(encuesta.tipo)} {encuesta.tipo}</span>
+                  <span class="fecha">{new Date(encuesta.timestamp).toLocaleDateString('es-ES')}</span>
+                </div>
+                {#if encuesta.calificacion}
+                  <p><strong>Calificación:</strong> {encuesta.calificacion}/5</p>
+                {/if}
+                {#if encuesta.comentario}
+                  <p>{encuesta.comentario}</p>
+                {/if}
+                {#if encuesta.contenido}
+                  <p>{encuesta.contenido}</p>
+                {/if}
+                {#if encuesta.tipo === 'sugerencia' && !encuesta.revisada}
+                  <button on:click={() => marcarSugerenciaRevisada(encuesta._id)} class="btn-small">Marcar como revisada</button>
+                {/if}
+                {#if encuesta.revisada}
+                  <span class="badge-ok">✓ Revisada</span>
+                {/if}
+              </div>
+            {:else}
+              <p class="empty-state">No hay encuestas registradas</p>
+            {/each}
+          </div>
+
+          <h3>Agregar Feedback de Maestro</h3>
+          <form on:submit|preventDefault={guardarFeedbackMaestro} class="form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="feedback-maestro">Maestro *</label>
+                <select id="feedback-maestro" bind:value={newFeedbackMaestro.maestroId} required>
+                  <option value="">Seleccionar maestro</option>
+                  {#each maestros as maestro}
+                    <option value={maestro._id}>{maestro.nombre}</option>
+                  {/each}
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="feedback-eficiencia">Eficiencia *</label>
+                <select id="feedback-eficiencia" bind:value={newFeedbackMaestro.eficiencia} required>
+                  <option value="">Seleccionar</option>
+                  <option value="excelente">Excelente</option>
+                  <option value="buena">Buena</option>
+                  <option value="regular">Regular</option>
+                  <option value="necesita_mejora">Necesita Mejora</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="feedback-comentarios">Comentarios</label>
+              <textarea id="feedback-comentarios" bind:value={newFeedbackMaestro.comentarios} rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Guardar Feedback</button>
+          </form>
+        </div>
+      {/if}
+
       {#if activeTab === 'tareas'}
         <div class="section">
           <h2>📝 Tareas y Actividades</h2>
           
           <div class="tareas-tabs">
             <button class:active={!tareaSeleccionada} on:click={() => tareaSeleccionada = null}>📋 Lista de Tareas</button>
-            <button class:active={tareaSeleccionada} on:click={() => {}}>📅 Calendario Académico</button>
+            <button class:active={calendarioAcademico && !tareaSeleccionada} on:click={() => { tareaSeleccionada = null; loadCalendarioAcademico(); }}>📅 Calendario Académico</button>
             <button on:click={() => { loadFechasImportantes(); }}>📌 Fechas Importantes</button>
           </div>
 
