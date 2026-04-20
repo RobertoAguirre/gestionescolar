@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import QRCode from 'qrcode';
   import { fetchAPI } from '../config.js';
   
   let isAuthenticated = false;
@@ -14,6 +15,7 @@
   let pagosResumen = null;
   let historial = [];
   let pickupEstado = null;
+  let pickupQrDataUrl = '';
   let pickupNota = '';
   let pickupLoading = false;
   let activeTab = 'dashboard';
@@ -117,6 +119,7 @@
     citas = [];
     historial = [];
     pickupEstado = null;
+    pickupQrDataUrl = '';
     pickupNota = '';
   }
 
@@ -148,6 +151,7 @@
       if (res.ok) {
         const data = await res.json();
         pickupEstado = data?.solicitud || null;
+        await actualizarQrPickup();
       }
     } catch (error) {
       console.error('Error cargando pickup seguro:', error);
@@ -168,12 +172,31 @@
         return;
       }
       pickupEstado = data.solicitud || null;
+      await actualizarQrPickup();
       pickupNota = '';
       alert('Solicitud de pickup creada. Muestra el codigo en recepcion.');
     } catch (error) {
       alert('Error solicitando pickup');
     } finally {
       pickupLoading = false;
+    }
+  }
+
+  async function actualizarQrPickup() {
+    if (!pickupEstado?.pickupToken || pickupEstado.estado !== 'pendiente') {
+      pickupQrDataUrl = '';
+      return;
+    }
+    try {
+      pickupQrDataUrl = await QRCode.toDataURL(
+        JSON.stringify({
+          type: 'pickup_qr',
+          token: pickupEstado.pickupToken
+        }),
+        { margin: 1, width: 220 }
+      );
+    } catch {
+      pickupQrDataUrl = '';
     }
   }
 
@@ -744,6 +767,9 @@
             <div class="pickup-card">
               <h3>Codigo activo</h3>
               <div class="pickup-code">{pickupEstado.codigo}</div>
+              {#if pickupQrDataUrl}
+                <img src={pickupQrDataUrl} alt="QR de pickup seguro" class="pickup-qr" />
+              {/if}
               <p>Expira: {new Date(pickupEstado.expiresAt).toLocaleString('es-ES')}</p>
             </div>
           {:else if pickupEstado}
@@ -1263,6 +1289,18 @@
     letter-spacing: 4px;
     margin: 8px 0;
     color: #343a40;
+  }
+
+  .pickup-qr {
+    width: 220px;
+    height: 220px;
+    display: block;
+    margin: 12px auto;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background: #fff;
+    padding: 8px;
+    box-sizing: border-box;
   }
 
   .pickup-status {

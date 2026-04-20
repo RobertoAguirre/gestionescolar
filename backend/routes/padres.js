@@ -462,6 +462,7 @@ router.get('/api/padres/pickup/estado', authPadre, async (req, res) => {
         id: ultimaSolicitud._id,
         estado: ultimaSolicitud.estado,
         codigo: activa ? ultimaSolicitud.codigo : null,
+        pickupToken: activa ? (ultimaSolicitud.pickupToken || null) : null,
         createdAt: ultimaSolicitud.createdAt,
         expiresAt: ultimaSolicitud.expiresAt,
         nota: ultimaSolicitud.nota || ''
@@ -512,12 +513,32 @@ router.post('/api/padres/pickup/solicitar', authPadre, async (req, res) => {
     if (alumno.escuelaId) solicitud.escuelaId = alumno.escuelaId;
 
     const result = await db.collection('pickup_solicitudes').insertOne(solicitud);
+    const secret = getJwtSecret();
+    if (!secret) {
+      return res.status(500).json({ error: 'JWT_SECRET no configurado' });
+    }
+    const pickupToken = jwt.sign(
+      {
+        type: 'pickup_qr',
+        solicitudId: String(result.insertedId),
+        alumnoId: String(req.alumnoId),
+        padreEmail: req.padreId,
+        codigo
+      },
+      secret,
+      { expiresIn: '10m' }
+    );
+    await db.collection('pickup_solicitudes').updateOne(
+      { _id: result.insertedId },
+      { $set: { pickupToken, updatedAt: new Date() } }
+    );
 
     return res.json({
       success: true,
       solicitud: {
         id: result.insertedId,
         codigo,
+        pickupToken,
         expiresAt,
         estado: 'pendiente'
       },
@@ -531,24 +552,55 @@ router.post('/api/padres/pickup/solicitar', authPadre, async (req, res) => {
 
 router.post('/api/admin/pickup/verificar', adminAuth, async (req, res) => {
   try {
-    const { codigo } = req.body || {};
-    if (!codigo || String(codigo).trim().length < 6) {
-      return res.status(400).json({ error: 'Codigo requerido' });
+    const { codigo, pickupToken } = req.body || {};
+    if ((!codigo || String(codigo).trim().length < 6) && !pickupToken) {
+      return res.status(400).json({ error: 'Codigo o pickupToken requerido' });
     }
 
     const db = getDB();
     const escuelaId = req.escuelaId || getEscuelaId(req);
     const now = new Date();
-    let query = {
-      codigo: String(codigo).trim(),
-      estado: 'pendiente',
-      expiresAt: { $gt: now }
-    };
+    let query = { estado: 'pendiente', expiresAt: { $gt: now } };
+    if (pickupToken) {
+      const secret = getJwtSecret();
+      if (!secret) {
+        return res.status(500).json({ error: 'JWT_SECRET no configurado' });
+      }
+      let payload = null;
+      try {
+        payload = jwt.verify(String(pickupToken), secret);
+      } catch {
+        return res.status(401).json({ error: 'pickupToken invalido o expirado' });
+      }
+      if (!payload?.solicitudId || !ObjectId.isValid(payload.solicitudId)) {
+        return res.status(401).json({ error: 'pickupToken invalido' });
+      }
+      query._id = new ObjectId(payload.solicitudId);
+    } else {
+      query.codigo = String(codigo).trim();
+    }
     query = addEscuelaFilter(query, escuelaId);
 
     const solicitud = await db.collection('pickup_solicitudes').findOne(query);
     if (!solicitud) {
       return res.status(404).json({ error: 'Codigo invalido o expirado' });
+    }
+
+    if (!solicitud.verificadaAt) {
+      await db.collection('pickup_solicitudes').updateOne(
+        { _id: solicitud._id },
+        { $set: { verificadaAt: now, verificadaPor: req.rol || 'admin_escuela', updatedAt: now } }
+      );
+      await db.collection('notificaciones').insertOne({
+        tipo: 'pickup_en_puerta',
+        alumnoId: solicitud.alumnoId,
+        titulo: 'Tu tutor esta en la puerta',
+        mensaje: `${solicitud.padreNombre} ya llego para recogerte.`,
+        leida: false,
+        timestamp: now,
+        ...(solicitud.escuelaId ? { escuelaId: solicitud.escuelaId } : {})
+      });
+      solicitud.verificadaAt = now;
     }
 
     return res.json({
@@ -562,7 +614,8 @@ router.post('/api/admin/pickup/verificar', adminAuth, async (req, res) => {
         nota: solicitud.nota || '',
         createdAt: solicitud.createdAt,
         expiresAt: solicitud.expiresAt,
-        estado: solicitud.estado
+        estado: solicitud.estado,
+        verificadaAt: solicitud.verificadaAt || null
       }
     });
   } catch (error) {
@@ -573,14 +626,32 @@ router.post('/api/admin/pickup/verificar', adminAuth, async (req, res) => {
 
 router.post('/api/admin/pickup/completar', adminAuth, async (req, res) => {
   try {
-    const { solicitudId, observaciones = '' } = req.body || {};
-    if (!ObjectId.isValid(solicitudId)) {
-      return res.status(400).json({ error: 'solicitudId invalido' });
-    }
+    const { solicitudId, pickupToken, observaciones = '' } = req.body || {};
 
     const db = getDB();
     const escuelaId = req.escuelaId || getEscuelaId(req);
-    let query = { _id: new ObjectId(solicitudId), estado: 'pendiente' };
+    let query = { estado: 'pendiente' };
+    if (pickupToken) {
+      const secret = getJwtSecret();
+      if (!secret) {
+        return res.status(500).json({ error: 'JWT_SECRET no configurado' });
+      }
+      let payload = null;
+      try {
+        payload = jwt.verify(String(pickupToken), secret);
+      } catch {
+        return res.status(401).json({ error: 'pickupToken invalido o expirado' });
+      }
+      if (!payload?.solicitudId || !ObjectId.isValid(payload.solicitudId)) {
+        return res.status(401).json({ error: 'pickupToken invalido' });
+      }
+      query._id = new ObjectId(payload.solicitudId);
+    } else {
+      if (!ObjectId.isValid(solicitudId)) {
+        return res.status(400).json({ error: 'solicitudId invalido' });
+      }
+      query._id = new ObjectId(solicitudId);
+    }
     query = addEscuelaFilter(query, escuelaId);
 
     const solicitud = await db.collection('pickup_solicitudes').findOne(query);
