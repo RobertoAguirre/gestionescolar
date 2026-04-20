@@ -645,8 +645,9 @@
         padres: (newAlumno.padres || []).map((p) => ({
           nombre: (p.nombre || '').trim(),
           email: (p.email || '').trim(),
-          password: (p.password || '').trim()
-        })).filter((p) => p.nombre && p.email && p.password)
+          ...(p.password ? { password: (p.password || '').trim() } : {}),
+          ...(p.passwordHash ? { passwordHash: p.passwordHash } : {})
+        })).filter((p) => p.nombre && p.email && (p.password || p.passwordHash))
       };
       if (data.grupoId === '') data.grupoId = null;
       
@@ -679,7 +680,8 @@
       padres: (a.padres || []).map((p) => ({
         nombre: p.nombre || '',
         email: p.email || '',
-        password: p.password || ''
+        password: p.password || '',
+        passwordHash: p.passwordHash || ''
       }))
     };
     newPadre = { nombre: '', email: '', password: '' };
@@ -1846,7 +1848,11 @@
       const method = editingRecurso ? 'PUT' : 'POST';
       
       const headers = getAuthHeaders();
-      delete headers['Content-Type']; // Dejar que el navegador establezca el Content-Type para FormData
+      if (method === 'POST') {
+        delete headers['Content-Type']; // Dejar que el navegador establezca el Content-Type para FormData
+      } else {
+        headers['Content-Type'] = 'application/json';
+      }
       
       const res = await fetch(url, {
         method,

@@ -234,7 +234,7 @@ router.post('/api/admin/recursos', adminAuth, upload.single('archivo'), async (r
 router.put('/api/admin/recursos/:id', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { titulo, descripcion, tipo, materia, url, learningDifferences, tags } = req.body;
+    const { titulo, descripcion, tipo, materia, url, maestroId, learningDifferences, tags } = req.body;
     
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ error: 'ID inválido' });
@@ -252,6 +252,9 @@ router.put('/api/admin/recursos/:id', adminAuth, async (req, res) => {
     if (tipo) updateData.tipo = tipo;
     if (materia !== undefined) updateData.materia = materia;
     if (url !== undefined) updateData.url = url;
+    if (maestroId !== undefined) {
+      updateData.maestroId = ObjectId.isValid(maestroId) ? new ObjectId(maestroId) : null;
+    }
     if (learningDifferences !== undefined) updateData.learningDifferences = learningDifferences === 'true' || learningDifferences === true;
     if (tags !== undefined) {
       updateData.tags = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim());

@@ -13,12 +13,13 @@ export async function fetchAPI(path, options = {}) {
   const url = `${API_URL}${path}`;
   const token = localStorage.getItem('adminToken');
   const escuelaId = localStorage.getItem('escuelaId');
+  const isAdminRoute = path.startsWith('/api/admin') || path.startsWith('/api/super-admin');
 
   const headers = { ...options.headers };
-  if (token) {
+  if (token && !headers['Authorization']) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  if (escuelaId) {
+  if (escuelaId && isAdminRoute && !headers['X-Escuela-Id']) {
     headers['X-Escuela-Id'] = escuelaId;
   }
   if (options.body && typeof options.body === 'string') {

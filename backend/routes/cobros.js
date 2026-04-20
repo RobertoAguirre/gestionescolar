@@ -11,6 +11,15 @@ function toObjectId(id) {
   return ObjectId.isValid(id) ? new ObjectId(id) : null;
 }
 
+function alumnoIdCompatFilter(alumnoId) {
+  return {
+    $or: [
+      { alumnoId },
+      { alumnoId: String(alumnoId) }
+    ]
+  };
+}
+
 async function crearNotificacionCobro(db, data, escuelaId = null) {
   const payload = {
     tipo: 'recordatorio_pago',
@@ -362,7 +371,7 @@ router.get('/api/padres/pagos/estado-cuenta', authPadre, async (req, res) => {
     const db = getDB();
     const escuelaId = getEscuelaId(req);
     const query = addEscuelaFilter({
-      alumnoId: req.alumnoId,
+      ...alumnoIdCompatFilter(req.alumnoId),
       estado: { $in: ['pendiente', 'parcial', 'pagado'] }
     }, escuelaId);
 
@@ -394,7 +403,7 @@ router.post('/api/padres/pagos/intencion', authPadre, async (req, res) => {
     const escuelaId = getEscuelaId(req);
     const cargo = await db.collection('cargos_cobro').findOne(addEscuelaFilter({
       _id: cargoObjectId,
-      alumnoId: req.alumnoId
+      ...alumnoIdCompatFilter(req.alumnoId)
     }, escuelaId));
 
     if (!cargo) return res.status(404).json({ error: 'Cargo no encontrado' });

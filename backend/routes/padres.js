@@ -7,6 +7,15 @@ import { getJwtSecret } from '../utils/auth.js';
 
 const router = express.Router();
 
+function alumnoIdFilter(alumnoId) {
+  return {
+    $or: [
+      { alumnoId },
+      { alumnoId: String(alumnoId) }
+    ]
+  };
+}
+
 // POST - Login de padre
 router.post('/api/padres/login', async (req, res) => {
   try {
@@ -171,7 +180,7 @@ router.get('/api/padres/calificaciones', authPadre, async (req, res) => {
     const db = getDB();
     const { periodo } = req.query;
     
-    let query = { alumnoId: req.alumnoId };
+    let query = alumnoIdFilter(req.alumnoId);
     if (periodo) {
       query.periodo = periodo;
     }
@@ -219,7 +228,7 @@ router.get('/api/padres/progreso', authPadre, async (req, res) => {
     const db = getDB();
     
     const calificaciones = await db.collection('calificaciones')
-      .find({ alumnoId: req.alumnoId })
+      .find(alumnoIdFilter(req.alumnoId))
       .sort({ fecha: 1 })
       .toArray();
     
@@ -242,7 +251,7 @@ router.get('/api/padres/progreso', authPadre, async (req, res) => {
     
     // Objetivos
     const objetivos = await db.collection('objetivos')
-      .find({ alumnoId: req.alumnoId })
+      .find(alumnoIdFilter(req.alumnoId))
       .toArray();
     
     const objetivosCumplidos = objetivos.filter(obj => {
@@ -299,7 +308,7 @@ router.get('/api/padres/citas', authPadre, async (req, res) => {
       .find({
         $or: [
           { email: emailPadre },
-          { alumnoId: req.alumnoId }
+          ...alumnoIdFilter(req.alumnoId).$or
         ]
       })
       .sort({ fecha: 1 })
@@ -319,21 +328,21 @@ router.get('/api/padres/historial', authPadre, async (req, res) => {
     
     // Historial de conversaciones con el chatbot relacionadas con el alumno
     const conversaciones = await db.collection('conversations')
-      .find({ alumnoId: req.alumnoId })
+      .find(alumnoIdFilter(req.alumnoId))
       .sort({ timestamp: -1 })
       .limit(50)
       .toArray();
     
     // Historial de mensajes recibidos
     const mensajes = await db.collection('mensajes')
-      .find({ alumnoId: req.alumnoId })
+      .find(alumnoIdFilter(req.alumnoId))
       .sort({ timestamp: -1 })
       .limit(50)
       .toArray();
     
     // Historial de notificaciones
     const notificaciones = await db.collection('notificaciones')
-      .find({ alumnoId: req.alumnoId })
+      .find(alumnoIdFilter(req.alumnoId))
       .sort({ timestamp: -1 })
       .limit(50)
       .toArray();
