@@ -97,7 +97,8 @@
   let newCargoCobro = { conceptoId: '', alumnoId: '', grupoId: '', fechaLimite: '', observaciones: '' };
   let pagoCobro = { cargoId: '', monto: '', metodo: 'efectivo', referencia: '' };
   let newMaestro = { nombre: '', email: '', telefono: '', especialidad: '', horariosDisponibles: '' };
-  let newAlumno = { nombre: '', email: '', telefono: '', grupoId: '', padres: [], padresTexto: '' };
+  let newAlumno = { nombre: '', email: '', telefono: '', grupoId: '', padres: [] };
+  let newPadre = { nombre: '', email: '', password: '' };
   let newEspacio = { nombre: '', tipo: 'salon', capacidad: 0, equipamiento: '' };
   let newGrupo = { nombre: '', nivel: '', maestroId: '', espacioId: '', horario: '', alumnos: [] };
   let newCalificacion = { alumnoId: '', grupoId: '', materia: '', calificacion: '', periodo: 'general', fecha: '', observaciones: '' };
@@ -639,7 +640,14 @@
         : `${API_URL}/api/admin/alumnos`;
       const method = editingAlumno ? 'PUT' : 'POST';
       
-      const data = { ...newAlumno };
+      const data = {
+        ...newAlumno,
+        padres: (newAlumno.padres || []).map((p) => ({
+          nombre: (p.nombre || '').trim(),
+          email: (p.email || '').trim(),
+          password: (p.password || '').trim()
+        })).filter((p) => p.nombre && p.email && p.password)
+      };
       if (data.grupoId === '') data.grupoId = null;
       
       const response = await fetch(url, {
@@ -656,7 +664,8 @@
       await loadAlumnos();
       await loadStats();
       editingAlumno = null;
-      newAlumno = { nombre: '', email: '', telefono: '', grupoId: '', padres: [], padresTexto: '' };
+      newAlumno = { nombre: '', email: '', telefono: '', grupoId: '', padres: [] };
+      newPadre = { nombre: '', email: '', password: '' };
     } catch (error) {
       alert(error.message || 'Error guardando alumno');
     }
@@ -664,13 +673,38 @@
 
   function editAlumno(a) {
     editingAlumno = a;
-    const padresTexto = (a.padres || []).map(p => `${p.nombre}|${p.email}|${p.password || ''}`).join('\n');
     newAlumno = { 
       ...a, 
       grupoId: a.grupoId ? String(a.grupoId) : '',
-      padres: a.padres || [],
-      padresTexto: padresTexto
+      padres: (a.padres || []).map((p) => ({
+        nombre: p.nombre || '',
+        email: p.email || '',
+        password: p.password || ''
+      }))
     };
+    newPadre = { nombre: '', email: '', password: '' };
+  }
+
+  function agregarPadre() {
+    const nombre = (newPadre.nombre || '').trim();
+    const email = (newPadre.email || '').trim();
+    const password = (newPadre.password || '').trim();
+
+    if (!nombre || !email || !password) {
+      alert('Completa nombre, email y contraseña del padre');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      alert('El email del padre no es válido');
+      return;
+    }
+
+    newAlumno.padres = [...(newAlumno.padres || []), { nombre, email, password }];
+    newPadre = { nombre: '', email: '', password: '' };
+  }
+
+  function eliminarPadre(index) {
+    newAlumno.padres = (newAlumno.padres || []).filter((_, i) => i !== index);
   }
 
   async function deleteAlumno(id) {
@@ -2597,32 +2631,29 @@
               {/each}
             </select>
             <div class="padres-section">
-              <label for="padres-texto">Padres (formato: nombre|email|password, uno por línea):</label>
-              <textarea 
-                id="padres-texto"
-                bind:value={newAlumno.padresTexto} 
-                placeholder="Ejemplo:&#10;Juan Pérez|juan@email.com|contraseña123&#10;María García|maria@email.com|contraseña456"
-                rows="3"
-                on:input={(e) => {
-                  const texto = e.target.value;
-                  if (texto.trim()) {
-                    newAlumno.padres = texto.split('\n').map(line => {
-                      const [nombre, email, password] = line.split('|').map(s => s.trim());
-                      if (nombre && email && password) {
-                        return { nombre, email, password };
-                      }
-                      return null;
-                    }).filter(p => p !== null);
-                  } else {
-                    newAlumno.padres = [];
-                  }
-                }}
-              ></textarea>
-              <small>Formato: nombre|email|contraseña (uno por línea)</small>
+              <p class="padres-title">Padres / Tutores</p>
+              <div class="padres-form-grid">
+                <input bind:value={newPadre.nombre} placeholder="Nombre del padre/tutor" />
+                <input bind:value={newPadre.email} type="email" placeholder="Email del padre/tutor" />
+                <input bind:value={newPadre.password} type="text" placeholder="Contraseña temporal" />
+              </div>
+              <button type="button" on:click={agregarPadre} class="btn-secondary">Agregar padre</button>
+              <div class="padres-list">
+                {#if (newAlumno.padres || []).length === 0}
+                  <small>No hay padres agregados</small>
+                {:else}
+                  {#each newAlumno.padres as padre, index}
+                    <div class="padre-item">
+                      <span>{padre.nombre} | {padre.email}</span>
+                      <button type="button" on:click={() => eliminarPadre(index)}>Quitar</button>
+                    </div>
+                  {/each}
+                {/if}
+              </div>
             </div>
             <button type="submit">{editingAlumno ? 'Actualizar' : 'Agregar'}</button>
             {#if editingAlumno}
-              <button type="button" on:click={() => { editingAlumno = null; newAlumno = { nombre: '', email: '', telefono: '', grupoId: '', padres: [], padresTexto: '' }; }}>Cancelar</button>
+              <button type="button" on:click={() => { editingAlumno = null; newAlumno = { nombre: '', email: '', telefono: '', grupoId: '', padres: [] }; newPadre = { nombre: '', email: '', password: '' }; }}>Cancelar</button>
             {/if}
           </form>
           <div class="list">
@@ -4795,20 +4826,57 @@
     margin: 15px 0;
   }
 
-  .padres-section label {
-    display: block;
-    margin-bottom: 8px;
+  .padres-title {
+    margin: 0 0 8px;
     font-weight: 600;
     color: #495057;
   }
 
-  .padres-section textarea {
+  .padres-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .btn-secondary {
+    margin-bottom: 10px;
+    background: #6c757d;
+  }
+
+  .padres-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .padre-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 8px 10px;
+  }
+
+  .padre-item span {
+    font-size: 0.9rem;
+    color: #343a40;
+  }
+
+  .padre-item button {
+    background: #dc3545;
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+
+  .padres-section input {
     width: 100%;
     padding: 10px;
     border: 1px solid #ced4da;
     border-radius: 6px;
     font-size: 0.9rem;
-    font-family: monospace;
     box-sizing: border-box;
   }
 
