@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { connectDB } from './utils/db.js';
@@ -65,6 +66,17 @@ app.use(cobrosRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
+
+const frontendDist = join(__dirname, '../frontend/dist');
+const frontendIndex = join(frontendDist, 'index.html');
+if (existsSync(frontendIndex)) {
+  app.use(express.static(frontendDist));
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(frontendIndex, (err) => (err ? next(err) : undefined));
+  });
+}
 
 // Iniciar servidor
 async function startServer() {

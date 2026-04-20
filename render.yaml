@@ -1,0 +1,11 @@
+# Un solo Web Service: API + estáticos del frontend (evita segundo proyecto en Render).
+# Tras crear el servicio, copia aquí las mismas variables de entorno que tenías en el backend.
+services:
+  - type: web
+    name: gestionescolar
+    runtime: node
+    buildCommand: cd frontend && npm ci && npm run build && cd ../backend && npm ci
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: VITE_SAME_ORIGIN
+        value: "true"
