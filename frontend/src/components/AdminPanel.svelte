@@ -152,11 +152,11 @@
       const response = await fetchAPI(`/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ password: password.trim() })
       });
 
-      const data = await response.json();
-      if (data.success) {
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.success) {
         authToken = data.token;
         localStorage.setItem('adminToken', data.token);
         isAuthenticated = true;
@@ -168,7 +168,12 @@
         }
         loadData();
       } else {
-        alert('Contraseña incorrecta');
+        const msg =
+          data.error ||
+          (response.status === 404
+            ? 'No se encontró la API (revisa la URL del backend o el despliegue).'
+            : 'Contraseña incorrecta');
+        alert(msg);
       }
     } catch (error) {
       alert('Error al iniciar sesión');

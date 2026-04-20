@@ -20,18 +20,28 @@ export function getJwtSecret() {
 }
 
 async function comparePassword(plainPassword, plainEnvPassword, hashEnvPassword) {
-  if (hashEnvPassword) {
-    return bcrypt.compare(plainPassword, hashEnvPassword);
+  const trimmedPlain =
+    typeof plainPassword === 'string' ? plainPassword.trim() : plainPassword;
+  const trimmedEnv =
+    typeof plainEnvPassword === 'string' ? plainEnvPassword.trim() : plainEnvPassword;
+
+  if (hashEnvPassword && String(hashEnvPassword).trim()) {
+    try {
+      return await bcrypt.compare(trimmedPlain, String(hashEnvPassword).trim());
+    } catch {
+      return false;
+    }
   }
-  if (!plainEnvPassword) return false;
-  return plainPassword === plainEnvPassword;
+  if (!trimmedEnv) return false;
+  return trimmedPlain === trimmedEnv;
 }
 
 export async function verifyAdminCredentials(password, escuelaId = null) {
-  if (!password) return null;
+  const p = typeof password === 'string' ? password.trim() : password;
+  if (!p) return null;
 
   const isSuperAdmin = await comparePassword(
-    password,
+    p,
     process.env.SUPER_ADMIN_PASSWORD || '',
     process.env.SUPER_ADMIN_PASSWORD_HASH || ''
   );
@@ -40,7 +50,7 @@ export async function verifyAdminCredentials(password, escuelaId = null) {
   }
 
   const isGlobalAdmin = await comparePassword(
-    password,
+    p,
     process.env.ADMIN_PASSWORD || '',
     process.env.ADMIN_PASSWORD_HASH || ''
   );
@@ -62,8 +72,8 @@ export async function verifyAdminCredentials(password, escuelaId = null) {
   if (!escuelaPassword) return null;
 
   const validEscuelaAdmin = escuelaPassword.startsWith('$2')
-    ? await bcrypt.compare(password, escuelaPassword)
-    : escuelaPassword === password;
+    ? await bcrypt.compare(p, escuelaPassword)
+    : escuelaPassword === p;
 
   if (!validEscuelaAdmin) return null;
 
