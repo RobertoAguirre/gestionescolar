@@ -1,5 +1,6 @@
 import { getDB } from './db.js';
 import { ObjectId } from 'mongodb';
+import jwt from 'jsonwebtoken';
 
 // Función para obtener el escuelaId del request
 export function getEscuelaId(req) {
@@ -54,23 +55,17 @@ export async function verifyEscuelaResource(collection, resourceId, escuelaId) {
 
 // Función para obtener el rol del usuario desde el token
 export function getUserRole(req) {
-  // Por ahora, simplificado. En producción debería venir del token JWT
-  const authHeader = req.headers.authorization;
-  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'superadmin123';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-  
-  if (authHeader === `Bearer ${superAdminPassword}`) {
-    return 'super_admin';
+  const authHeader = req.headers.authorization || '';
+  if (!authHeader.startsWith('Bearer ')) return 'guest';
+  const token = authHeader.slice(7).trim();
+  const secret = process.env.JWT_SECRET || '';
+  if (!secret || !token) return 'guest';
+  try {
+    const payload = jwt.verify(token, secret);
+    return payload.role || 'guest';
+  } catch {
+    return 'guest';
   }
-  
-  if (authHeader === `Bearer ${adminPassword}`) {
-    return 'admin_escuela';
-  }
-  
-  // Verificar si es padre (token de sesión)
-  // Esto se maneja en el middleware de padres
-  
-  return 'guest';
 }
 
 // Función para verificar permisos

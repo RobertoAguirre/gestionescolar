@@ -12,27 +12,27 @@
 - [x] Conectar boton Calendario Academico en Tareas
 - [x] CSS para modales del Chatbot
 - [x] Helper fetchAPI centralizado en config.js
-- [ ] Migrar componentes a usar fetchAPI (progresivo)
+- [x] Migrar componentes a usar fetchAPI (progresivo)
 - [ ] Refactorizar AdminPanel en sub-componentes
 - [ ] SPA Router
 
 ## Fase 1: Sistema de Cobros
 
-- [ ] Backend: routes/cobros.js (CRUD conceptos de pago)
-- [ ] Backend: estados de cuenta por alumno
-- [ ] Backend: registrar pagos
-- [ ] Backend: recordatorios automaticos de pago
-- [ ] Frontend: tab Cobros en AdminPanel
-- [ ] Frontend: tab Pagos en PortalPadres
+- [x] Backend: routes/cobros.js (CRUD conceptos de pago)
+- [x] Backend: estados de cuenta por alumno
+- [x] Backend: registrar pagos
+- [x] Backend: recordatorios automaticos de pago
+- [x] Frontend: tab Cobros en AdminPanel
+- [x] Frontend: tab Pagos en PortalPadres
 - [ ] Integracion pasarela (Stripe/Conekta)
 
 ## Fase 2: Autenticacion JWT
 
-- [ ] Reescribir auth.js con JWT
-- [ ] Passwords con bcrypt
+- [x] Reescribir auth.js con JWT (adminAuth, requireSuperAdmin, getJwtSecret)
+- [x] Passwords con bcrypt (padres, alta escuela, usuarios escuela; env con hash opcional admin/super)
 - [ ] Conectar hasPermission a rutas reales
 - [ ] Login unificado (admin, maestro, padre)
-- [ ] Proteger rutas maestro (tareas, asistencia, recursos)
+- [x] Proteger rutas maestro (tareas, asistencia, recursos)
 - [ ] Recuperacion de contrasena
 
 ## Fase 3: Portal Maestros

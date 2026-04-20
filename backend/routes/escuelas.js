@@ -1,44 +1,28 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
 import { getDB } from '../utils/db.js';
-import { adminAuth } from '../utils/auth.js';
+import { adminAuth, requireSuperAdmin } from '../utils/auth.js';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 
 const router = express.Router();
 
-// Middleware para verificar si es super admin
-async function isSuperAdmin(req, res, next) {
-  try {
-    const authHeader = req.headers.authorization;
-    const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'superadmin123';
-    
-    if (authHeader && authHeader === `Bearer ${superAdminPassword}`) {
-      req.isSuperAdmin = true;
-      return next();
-    } else {
-      req.isSuperAdmin = false;
-      // Si no es super admin, verificar si es admin normal
-      return adminAuth(req, res, next);
-    }
-  } catch (error) {
-    return res.status(500).json({ error: 'Error en autenticación' });
-  }
-}
-
 // GET - Listar todas las escuelas (solo super admin)
-router.get('/api/super-admin/escuelas', isSuperAdmin, async (req, res) => {
+router.get('/api/super-admin/escuelas', requireSuperAdmin, async (req, res) => {
   try {
-    if (!req.isSuperAdmin) {
-      return res.status(403).json({ error: 'Solo super administradores pueden acceder' });
-    }
-    
     const db = getDB();
     const escuelas = await db.collection('escuelas')
       .find({})
       .sort({ nombre: 1 })
       .toArray();
-    
-    res.json(escuelas);
+
+    const safe = escuelas.map((e) => {
+      const copy = { ...e };
+      if (copy.configuracion?.adminPassword) delete copy.configuracion.adminPassword;
+      return copy;
+    });
+
+    res.json(safe);
   } catch (error) {
     console.error('Error obteniendo escuelas:', error);
     res.status(500).json({ error: 'Error obteniendo escuelas' });
@@ -46,12 +30,8 @@ router.get('/api/super-admin/escuelas', isSuperAdmin, async (req, res) => {
 });
 
 // POST - Crear nueva escuela (solo super admin)
-router.post('/api/super-admin/escuelas', isSuperAdmin, async (req, res) => {
+router.post('/api/super-admin/escuelas', requireSuperAdmin, async (req, res) => {
   try {
-    if (!req.isSuperAdmin) {
-      return res.status(403).json({ error: 'Solo super administradores pueden crear escuelas' });
-    }
-    
     const { nombre, codigo, direccion, telefono, email, adminEmail, adminPassword } = req.body;
     
     if (!nombre || !codigo) {
@@ -66,6 +46,9 @@ router.post('/api/super-admin/escuelas', isSuperAdmin, async (req, res) => {
       return res.status(400).json({ error: 'El código de escuela ya existe' });
     }
     
+    const plainAdminEscuela = adminPassword || crypto.randomBytes(16).toString('hex');
+    const adminPasswordHash = await bcrypt.hash(plainAdminEscuela, 10);
+
     const escuela = {
       nombre,
       codigo,
@@ -74,7 +57,7 @@ router.post('/api/super-admin/escuelas', isSuperAdmin, async (req, res) => {
       email: email || '',
       activa: true,
       configuracion: {
-        adminPassword: adminPassword || crypto.randomBytes(16).toString('hex'),
+        adminPassword: adminPasswordHash,
         aiProvider: 'claude',
         timezone: 'America/Mexico_City'
       },
@@ -85,17 +68,27 @@ router.post('/api/super-admin/escuelas', isSuperAdmin, async (req, res) => {
     
     // Si se proporciona adminEmail, crear usuario admin para esta escuela
     if (adminEmail && adminPassword) {
+      const usuarioHash = await bcrypt.hash(adminPassword, 10);
       await db.collection('usuarios').insertOne({
         escuelaId: result.insertedId,
         email: adminEmail,
-        password: adminPassword, // En producción, debería ser hash
+        passwordHash: usuarioHash,
         rol: 'admin_escuela',
         activo: true,
         timestamp: new Date()
       });
     }
     
-    res.json({ success: true, id: result.insertedId, escuela });
+    const escuelaResp = await db.collection('escuelas').findOne({ _id: result.insertedId });
+    if (escuelaResp?.configuracion) {
+      delete escuelaResp.configuracion.adminPassword;
+    }
+    res.json({
+      success: true,
+      id: result.insertedId,
+      escuela: escuelaResp,
+      initialAdminPassword: plainAdminEscuela
+    });
   } catch (error) {
     console.error('Error creando escuela:', error);
     res.status(500).json({ error: 'Error creando escuela' });
@@ -103,12 +96,8 @@ router.post('/api/super-admin/escuelas', isSuperAdmin, async (req, res) => {
 });
 
 // PUT - Actualizar escuela (solo super admin)
-router.put('/api/super-admin/escuelas/:id', isSuperAdmin, async (req, res) => {
+router.put('/api/super-admin/escuelas/:id', requireSuperAdmin, async (req, res) => {
   try {
-    if (!req.isSuperAdmin) {
-      return res.status(403).json({ error: 'Solo super administradores pueden actualizar escuelas' });
-    }
-    
     const { id } = req.params;
     const { nombre, codigo, direccion, telefono, email, activa } = req.body;
     

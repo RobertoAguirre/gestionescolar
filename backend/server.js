@@ -25,6 +25,7 @@ import escuelasRoutes from './routes/escuelas.js';
 import reportesRoutes from './routes/reportes.js';
 import tareasRoutes from './routes/tareas.js';
 import recursosRoutes from './routes/recursos.js';
+import cobrosRoutes from './routes/cobros.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -58,6 +59,7 @@ app.use(escuelasRoutes);
 app.use(reportesRoutes);
 app.use(tareasRoutes);
 app.use(recursosRoutes);
+app.use(cobrosRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

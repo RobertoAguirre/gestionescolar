@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { API_URL } from '../config.js';
+  import { API_URL, fetchAPI } from '../config.js';
   
   let isAuthenticated = false;
   let password = '';
@@ -37,6 +37,9 @@
   let horarios = [];
   let eventos = [];
   let planes = [];
+  let conceptosCobro = [];
+  let estadoCuentaCobros = [];
+  let resumenCobros = null;
   let citas = [];
   let informacion = { contenido: '' };
   let maestros = [];
@@ -90,6 +93,9 @@
   let newHorario = { titulo: '', descripcion: '', orden: 0 };
   let newEvento = { titulo: '', descripcion: '', fecha: '', enviarRecordatorio: false };
   let newPlan = { nombre: '', descripcion: '', costo: '' };
+  let newConceptoCobro = { nombre: '', descripcion: '', monto: '', frecuencia: 'mensual', activo: true };
+  let newCargoCobro = { conceptoId: '', alumnoId: '', grupoId: '', fechaLimite: '', observaciones: '' };
+  let pagoCobro = { cargoId: '', monto: '', metodo: 'efectivo', referencia: '' };
   let newMaestro = { nombre: '', email: '', telefono: '', especialidad: '', horariosDisponibles: '' };
   let newAlumno = { nombre: '', email: '', telefono: '', grupoId: '', padres: [], padresTexto: '' };
   let newEspacio = { nombre: '', tipo: 'salon', capacidad: 0, equipamiento: '' };
@@ -125,7 +131,7 @@
 
   async function checkSuperAdmin() {
     try {
-      const res = await fetch(`${API_URL}/api/super-admin/escuelas`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/super-admin/escuelas`, { headers: getAuthHeaders() });
       if (res.ok) {
         escuelas = await res.json();
         isSuperAdmin = true;
@@ -143,7 +149,7 @@
 
   async function login() {
     try {
-      const response = await fetch(`${API_URL}/api/admin/login`, {
+      const response = await fetchAPI(`/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password })
@@ -154,6 +160,12 @@
         authToken = data.token;
         localStorage.setItem('adminToken', data.token);
         isAuthenticated = true;
+        isSuperAdmin = data.role === 'super_admin';
+        if (isSuperAdmin) {
+          await checkSuperAdmin();
+        } else {
+          escuelas = [];
+        }
         loadData();
       } else {
         alert('Contraseña incorrecta');
@@ -166,6 +178,8 @@
   function logout() {
     isAuthenticated = false;
     authToken = '';
+    isSuperAdmin = false;
+    escuelas = [];
     localStorage.removeItem('adminToken');
   }
 
@@ -202,13 +216,14 @@
       loadMensajes(),
       loadRespuestasRapidas(),
       loadAlumnosEnRiesgo(),
-      loadRecursos()
+      loadRecursos(),
+      loadCobrosResumen()
     ]);
   }
 
   async function loadStats() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/stats`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/stats`, { headers: getAuthHeaders() });
       stats = await res.json();
     } catch (error) {
       console.error('Error cargando estadísticas:', error);
@@ -217,7 +232,7 @@
 
   async function loadHorarios() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/horarios`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/horarios`, { headers: getAuthHeaders() });
       horarios = await res.json();
     } catch (error) {
       console.error('Error cargando horarios:', error);
@@ -226,7 +241,7 @@
 
   async function loadEventos() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/eventos`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/eventos`, { headers: getAuthHeaders() });
       eventos = await res.json();
     } catch (error) {
       console.error('Error cargando eventos:', error);
@@ -235,7 +250,7 @@
 
   async function loadPlanes() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/planes`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/planes`, { headers: getAuthHeaders() });
       planes = await res.json();
     } catch (error) {
       console.error('Error cargando planes:', error);
@@ -244,7 +259,7 @@
 
   async function loadCitas() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/citas`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/citas`, { headers: getAuthHeaders() });
       citas = await res.json();
     } catch (error) {
       console.error('Error cargando citas:', error);
@@ -253,7 +268,7 @@
 
   async function loadInformacion() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/informacion`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/informacion`, { headers: getAuthHeaders() });
       informacion = await res.json();
     } catch (error) {
       console.error('Error cargando información:', error);
@@ -304,7 +319,7 @@
   async function deleteHorario(id) {
     if (!confirm('¿Eliminar este horario?')) return;
     try {
-      await fetch(`${API_URL}/api/admin/horarios/${id}`, {
+      await fetchAPI(`/api/admin/horarios/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -345,7 +360,7 @@
   async function deleteEvento(id) {
     if (!confirm('¿Eliminar este evento?')) return;
     try {
-      await fetch(`${API_URL}/api/admin/eventos/${id}`, {
+      await fetchAPI(`/api/admin/eventos/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -385,7 +400,7 @@
   async function deletePlan(id) {
     if (!confirm('¿Eliminar este plan?')) return;
     try {
-      await fetch(`${API_URL}/api/admin/planes/${id}`, {
+      await fetchAPI(`/api/admin/planes/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -395,10 +410,127 @@
     }
   }
 
+  // Cobros
+  async function loadConceptosCobro() {
+    try {
+      const res = await fetchAPI('/api/admin/cobros/conceptos', { headers: getAuthHeaders() });
+      if (res.ok) conceptosCobro = await res.json();
+    } catch (error) {
+      console.error('Error cargando conceptos de cobro:', error);
+    }
+  }
+
+  async function loadEstadoCuentaCobros() {
+    try {
+      const res = await fetchAPI('/api/admin/cobros/estado-cuenta', { headers: getAuthHeaders() });
+      if (res.ok) estadoCuentaCobros = await res.json();
+    } catch (error) {
+      console.error('Error cargando estado de cuenta de cobros:', error);
+    }
+  }
+
+  async function loadCobrosResumen() {
+    try {
+      const res = await fetchAPI('/api/admin/cobros/resumen', { headers: getAuthHeaders() });
+      if (res.ok) resumenCobros = await res.json();
+    } catch (error) {
+      console.error('Error cargando resumen de cobros:', error);
+    }
+  }
+
+  async function saveConceptoCobro() {
+    try {
+      const payload = {
+        ...newConceptoCobro,
+        monto: Number(newConceptoCobro.monto)
+      };
+      const res = await fetchAPI('/api/admin/cobros/conceptos', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || 'Error guardando concepto');
+        return;
+      }
+      newConceptoCobro = { nombre: '', descripcion: '', monto: '', frecuencia: 'mensual', activo: true };
+      await loadConceptosCobro();
+    } catch (error) {
+      alert('Error guardando concepto');
+    }
+  }
+
+  async function generarCargoCobro() {
+    if (!newCargoCobro.conceptoId || (!newCargoCobro.alumnoId && !newCargoCobro.grupoId)) {
+      alert('Selecciona concepto y alumno o grupo');
+      return;
+    }
+    try {
+      const res = await fetchAPI('/api/admin/cobros/cargos/generar', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(newCargoCobro)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Error generando cargos');
+        return;
+      }
+      alert(`Cargos generados: ${data.generados}`);
+      newCargoCobro = { conceptoId: '', alumnoId: '', grupoId: '', fechaLimite: '', observaciones: '' };
+      await Promise.all([loadEstadoCuentaCobros(), loadCobrosResumen()]);
+    } catch (error) {
+      alert('Error generando cargos');
+    }
+  }
+
+  async function registrarPagoCobro() {
+    if (!pagoCobro.cargoId || !pagoCobro.monto) {
+      alert('Selecciona cargo y monto');
+      return;
+    }
+    try {
+      const res = await fetchAPI('/api/admin/cobros/pagos/registrar', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ ...pagoCobro, monto: Number(pagoCobro.monto) })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Error registrando pago');
+        return;
+      }
+      alert('Pago registrado');
+      pagoCobro = { cargoId: '', monto: '', metodo: 'efectivo', referencia: '' };
+      await Promise.all([loadEstadoCuentaCobros(), loadCobrosResumen()]);
+    } catch (error) {
+      alert('Error registrando pago');
+    }
+  }
+
+  async function enviarRecordatorioCobro(cargoId) {
+    try {
+      const res = await fetchAPI('/api/admin/cobros/recordatorios/enviar', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ cargoIds: [cargoId] })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Error enviando recordatorio');
+        return;
+      }
+      alert(`Recordatorios enviados: ${data.recordatoriosEnviados}`);
+    } catch (error) {
+      alert('Error enviando recordatorio');
+    }
+  }
+
   // Información
   async function saveInformacion() {
     try {
-      await fetch(`${API_URL}/api/admin/informacion`, {
+      await fetchAPI(`/api/admin/informacion`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ contenido: informacion.contenido })
@@ -412,7 +544,7 @@
   // Maestros
   async function loadMaestros() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/maestros`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/maestros`, { headers: getAuthHeaders() });
       maestros = await res.json();
     } catch (error) {
       console.error('Error cargando maestros:', error);
@@ -464,7 +596,7 @@
   async function deleteMaestro(id) {
     if (!confirm('¿Eliminar este maestro?')) return;
     try {
-      await fetch(`${API_URL}/api/admin/maestros/${id}`, {
+      await fetchAPI(`/api/admin/maestros/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -478,7 +610,7 @@
   // Alumnos
   async function loadAlumnos() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/alumnos`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/alumnos`, { headers: getAuthHeaders() });
       alumnos = await res.json();
     } catch (error) {
       console.error('Error cargando alumnos:', error);
@@ -539,7 +671,7 @@
   async function deleteAlumno(id) {
     if (!confirm('¿Eliminar este alumno?')) return;
     try {
-      await fetch(`${API_URL}/api/admin/alumnos/${id}`, {
+      await fetchAPI(`/api/admin/alumnos/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -553,7 +685,7 @@
   // Espacios
   async function loadEspacios() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/espacios`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/espacios`, { headers: getAuthHeaders() });
       espacios = await res.json();
     } catch (error) {
       console.error('Error cargando espacios:', error);
@@ -609,7 +741,7 @@
   async function deleteEspacio(id) {
     if (!confirm('¿Eliminar este espacio?')) return;
     try {
-      await fetch(`${API_URL}/api/admin/espacios/${id}`, {
+      await fetchAPI(`/api/admin/espacios/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -622,7 +754,7 @@
   // Grupos
   async function loadGrupos() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/grupos`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/grupos`, { headers: getAuthHeaders() });
       grupos = await res.json();
     } catch (error) {
       console.error('Error cargando grupos:', error);
@@ -673,7 +805,7 @@
   async function deleteGrupo(id) {
     if (!confirm('¿Eliminar este grupo?')) return;
     try {
-      await fetch(`${API_URL}/api/admin/grupos/${id}`, {
+      await fetchAPI(`/api/admin/grupos/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -687,7 +819,7 @@
   // Citas
   async function updateCitaEstado(id, estado) {
     try {
-      await fetch(`${API_URL}/api/admin/citas/${id}`, {
+      await fetchAPI(`/api/admin/citas/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ estado })
@@ -702,7 +834,7 @@
   // Calificaciones
   async function loadCalificaciones() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/calificaciones`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/calificaciones`, { headers: getAuthHeaders() });
       calificaciones = await res.json();
     } catch (error) {
       console.error('Error cargando calificaciones:', error);
@@ -711,7 +843,7 @@
 
   async function loadAlertas() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/calificaciones/alertas?umbral=70`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/calificaciones/alertas?umbral=70`, { headers: getAuthHeaders() });
       const data = await res.json();
       alertas = data.alertas || [];
     } catch (error) {
@@ -778,7 +910,7 @@
   async function deleteCalificacion(id) {
     if (!confirm('¿Eliminar esta calificación?')) return;
     try {
-      await fetch(`${API_URL}/api/admin/calificaciones/${id}`, {
+      await fetchAPI(`/api/admin/calificaciones/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -791,7 +923,7 @@
 
   async function verPromedios(alumnoId) {
     try {
-      const res = await fetch(`${API_URL}/api/admin/calificaciones/promedios/${alumnoId}`, { 
+      const res = await fetchAPI(`/api/admin/calificaciones/promedios/${alumnoId}`, { 
         headers: getAuthHeaders() 
       });
       const data = await res.json();
@@ -807,7 +939,7 @@
 
   async function verHistorialAcademico(alumnoId) {
     try {
-      const res = await fetch(`${API_URL}/api/admin/calificaciones/historial/${alumnoId}`, { 
+      const res = await fetchAPI(`/api/admin/calificaciones/historial/${alumnoId}`, { 
         headers: getAuthHeaders() 
       });
       const data = await res.json();
@@ -823,7 +955,7 @@
 
   async function verRecomendaciones(alumnoId) {
     try {
-      const res = await fetch(`${API_URL}/api/admin/calificaciones/recomendaciones/${alumnoId}`, { 
+      const res = await fetchAPI(`/api/admin/calificaciones/recomendaciones/${alumnoId}`, { 
         headers: getAuthHeaders() 
       });
       const data = await res.json();
@@ -844,7 +976,7 @@
   // Asistencia
   async function loadAsistencia() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/asistencia`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/asistencia`, { headers: getAuthHeaders() });
       asistencia = await res.json();
     } catch (error) {
       console.error('Error cargando asistencia:', error);
@@ -853,7 +985,7 @@
 
   async function loadAlertasAusentismo() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/asistencia/alertas?umbral=80`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/asistencia/alertas?umbral=80`, { headers: getAuthHeaders() });
       const data = await res.json();
       alertasAusentismo = data.alertas || [];
     } catch (error) {
@@ -904,7 +1036,7 @@
   async function deleteAsistencia(id) {
     if (!confirm('¿Eliminar este registro de asistencia?')) return;
     try {
-      const res = await fetch(`${API_URL}/api/admin/asistencia/${id}`, {
+      const res = await fetchAPI(`/api/admin/asistencia/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -921,7 +1053,7 @@
 
   async function verEstadisticasAlumno(alumnoId) {
     try {
-      const res = await fetch(`${API_URL}/api/admin/asistencia/estadisticas/${alumnoId}`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/asistencia/estadisticas/${alumnoId}`, { headers: getAuthHeaders() });
       if (res.ok) {
         estadisticasAsistencia = await res.json();
       }
@@ -944,7 +1076,7 @@
       return;
     }
     try {
-      const res = await fetch(`${API_URL}/api/admin/asistencia/estadisticas-grupo/${grupoSeleccionadoAsistencia}`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/asistencia/estadisticas-grupo/${grupoSeleccionadoAsistencia}`, { headers: getAuthHeaders() });
       if (res.ok) {
         estadisticasGrupo = await res.json();
       }
@@ -960,7 +1092,7 @@
       if (alumnoSeleccionadoAsistencia) params.append('alumnoId', alumnoSeleccionadoAsistencia);
       params.append('meses', '6');
       
-      const res = await fetch(`${API_URL}/api/admin/asistencia/tendencias?${params.toString()}`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/asistencia/tendencias?${params.toString()}`, { headers: getAuthHeaders() });
       if (res.ok) {
         tendenciasAsistencia = await res.json();
       }
@@ -972,7 +1104,7 @@
   // Notificaciones
   async function loadNotificaciones() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/notificaciones`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/notificaciones`, { headers: getAuthHeaders() });
       notificaciones = await res.json();
     } catch (error) {
       console.error('Error cargando notificaciones:', error);
@@ -981,7 +1113,7 @@
 
   async function marcarNotificacionLeida(id) {
     try {
-      await fetch(`${API_URL}/api/admin/notificaciones/${id}/leida`, {
+      await fetchAPI(`/api/admin/notificaciones/${id}/leida`, {
         method: 'PUT',
         headers: getAuthHeaders()
       });
@@ -994,7 +1126,7 @@
   // Mensajería
   async function loadMensajes() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/mensajes`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/mensajes`, { headers: getAuthHeaders() });
       mensajes = await res.json();
     } catch (error) {
       console.error('Error cargando mensajes:', error);
@@ -1003,7 +1135,7 @@
 
   async function loadRespuestasRapidas() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/respuestas-rapidas`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/respuestas-rapidas`, { headers: getAuthHeaders() });
       respuestasRapidas = await res.json();
     } catch (error) {
       console.error('Error cargando respuestas rápidas:', error);
@@ -1034,7 +1166,7 @@
     }
     
     try {
-      const response = await fetch(`${API_URL}/api/admin/mensajes`, {
+      const response = await fetchAPI(`/api/admin/mensajes`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(newMensaje)
@@ -1102,7 +1234,7 @@
   async function deleteRespuestaRapida(id) {
     if (!confirm('¿Eliminar esta respuesta rápida?')) return;
     try {
-      await fetch(`${API_URL}/api/admin/respuestas-rapidas/${id}`, {
+      await fetchAPI(`/api/admin/respuestas-rapidas/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -1116,7 +1248,7 @@
   async function editarPerfilAccesibilidad(alumno) {
     editingPerfilAccesibilidad = alumno;
     try {
-      const res = await fetch(`${API_URL}/api/admin/accesibilidad/${alumno._id}`, { 
+      const res = await fetchAPI(`/api/admin/accesibilidad/${alumno._id}`, { 
         headers: getAuthHeaders() 
       });
       if (res.ok) {
@@ -1153,7 +1285,7 @@
     if (!editingPerfilAccesibilidad) return;
     
     try {
-      const response = await fetch(`${API_URL}/api/admin/accesibilidad/${editingPerfilAccesibilidad._id}`, {
+      const response = await fetchAPI(`/api/admin/accesibilidad/${editingPerfilAccesibilidad._id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ perfilAccesibilidad: perfilAccesibilidadEdit })
@@ -1180,7 +1312,7 @@
     }
     
     try {
-      const res = await fetch(`${API_URL}/api/admin/progreso/${alumnoProgresoSeleccionado}`, { 
+      const res = await fetchAPI(`/api/admin/progreso/${alumnoProgresoSeleccionado}`, { 
         headers: getAuthHeaders() 
       });
       if (res.ok) {
@@ -1199,7 +1331,7 @@
       return;
     }
     try {
-      const res = await fetch(`${API_URL}/api/admin/objetivos?alumnoId=${alumnoProgresoSeleccionado}`, { 
+      const res = await fetchAPI(`/api/admin/objetivos?alumnoId=${alumnoProgresoSeleccionado}`, { 
         headers: getAuthHeaders() 
       });
       if (res.ok) {
@@ -1213,7 +1345,7 @@
   async function loadLogros() {
     if (!alumnoProgresoSeleccionado) return;
     try {
-      const res = await fetch(`${API_URL}/api/admin/progreso/${alumnoProgresoSeleccionado}/logros`, { 
+      const res = await fetchAPI(`/api/admin/progreso/${alumnoProgresoSeleccionado}/logros`, { 
         headers: getAuthHeaders() 
       });
       if (res.ok) {
@@ -1271,7 +1403,7 @@
   async function deleteObjetivo(id) {
     if (!confirm('¿Eliminar este objetivo?')) return;
     try {
-      await fetch(`${API_URL}/api/admin/objetivos/${id}`, {
+      await fetchAPI(`/api/admin/objetivos/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -1295,7 +1427,7 @@
     }
     
     try {
-      const res = await fetch(`${API_URL}/api/admin/analisis-predictivo/${alumnoAnalisisSeleccionado}`, { 
+      const res = await fetchAPI(`/api/admin/analisis-predictivo/${alumnoAnalisisSeleccionado}`, { 
         headers: getAuthHeaders() 
       });
       if (res.ok) {
@@ -1350,7 +1482,7 @@
 
   async function loadEstadisticasEncuestas() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/encuestas/estadisticas`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/encuestas/estadisticas`, { headers: getAuthHeaders() });
       if (res.ok) {
         estadisticasEncuestas = await res.json();
       }
@@ -1361,7 +1493,7 @@
 
   async function marcarSugerenciaRevisada(id) {
     try {
-      const res = await fetch(`${API_URL}/api/admin/encuestas/${id}/revisada`, {
+      const res = await fetchAPI(`/api/admin/encuestas/${id}/revisada`, {
         method: 'PUT',
         headers: getAuthHeaders()
       });
@@ -1380,7 +1512,7 @@
     }
     
     try {
-      const res = await fetch(`${API_URL}/api/encuestas/feedback-maestros`, {
+      const res = await fetchAPI(`/api/encuestas/feedback-maestros`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(newFeedbackMaestro)
@@ -1465,7 +1597,7 @@
   // Funciones de tareas
   async function loadTareas() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/tareas`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/tareas`, { headers: getAuthHeaders() });
       if (res.ok) {
         tareas = await res.json();
       }
@@ -1524,7 +1656,7 @@
   async function deleteTarea(id) {
     if (!confirm('¿Eliminar esta tarea?')) return;
     try {
-      const res = await fetch(`${API_URL}/api/admin/tareas/${id}`, {
+      const res = await fetchAPI(`/api/admin/tareas/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -1540,7 +1672,7 @@
 
   async function verTarea(tarea) {
     try {
-      const res = await fetch(`${API_URL}/api/admin/tareas/${tarea._id}`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/tareas/${tarea._id}`, { headers: getAuthHeaders() });
       if (res.ok) {
         tareaSeleccionada = await res.json();
       } else {
@@ -1554,7 +1686,7 @@
 
   async function entregarTarea(tareaId, alumnoId) {
     try {
-      const res = await fetch(`${API_URL}/api/tareas/${tareaId}/entregar`, {
+      const res = await fetchAPI(`/api/tareas/${tareaId}/entregar`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -1568,7 +1700,7 @@
         await loadTareas();
         entregaTarea = { archivo: '', comentarios: '' };
         if (tareaSeleccionada) {
-          const updated = await fetch(`${API_URL}/api/admin/tareas/${tareaId}`, { headers: getAuthHeaders() });
+          const updated = await fetchAPI(`/api/admin/tareas/${tareaId}`, { headers: getAuthHeaders() });
           if (updated.ok) {
             tareaSeleccionada = await updated.json();
           }
@@ -1584,7 +1716,7 @@
 
   async function calificarTarea(tareaId, alumnoId) {
     try {
-      const res = await fetch(`${API_URL}/api/admin/tareas/${tareaId}/calificar`, {
+      const res = await fetchAPI(`/api/admin/tareas/${tareaId}/calificar`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -1598,7 +1730,7 @@
         await loadTareas();
         calificacionTarea = { calificacion: '', comentarios: '' };
         if (tareaSeleccionada) {
-          const updated = await fetch(`${API_URL}/api/admin/tareas/${tareaId}`, { headers: getAuthHeaders() });
+          const updated = await fetchAPI(`/api/admin/tareas/${tareaId}`, { headers: getAuthHeaders() });
           if (updated.ok) {
             tareaSeleccionada = await updated.json();
           }
@@ -1616,7 +1748,7 @@
     try {
       const mes = new Date().getMonth() + 1;
       const año = new Date().getFullYear();
-      const res = await fetch(`${API_URL}/api/admin/calendario-academico?mes=${mes}&año=${año}`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/calendario-academico?mes=${mes}&año=${año}`, { headers: getAuthHeaders() });
       if (res.ok) {
         calendarioAcademico = await res.json();
       }
@@ -1627,7 +1759,7 @@
 
   async function loadFechasImportantes() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/fechas-importantes?dias=30`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/fechas-importantes?dias=30`, { headers: getAuthHeaders() });
       if (res.ok) {
         fechasImportantes = await res.json();
       }
@@ -1643,7 +1775,7 @@
       if (materiaSeleccionadaRecursos) params.append('materia', materiaSeleccionadaRecursos);
       if (busquedaRecursos) params.append('busqueda', busquedaRecursos);
       
-      const res = await fetch(`${API_URL}/api/admin/recursos?${params.toString()}`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/recursos?${params.toString()}`, { headers: getAuthHeaders() });
       if (res.ok) {
         recursos = await res.json();
       }
@@ -1714,7 +1846,7 @@
   async function deleteRecurso(id) {
     if (!confirm('¿Eliminar este recurso?')) return;
     try {
-      const res = await fetch(`${API_URL}/api/admin/recursos/${id}`, {
+      const res = await fetchAPI(`/api/admin/recursos/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -1729,13 +1861,13 @@
 
   async function verRecurso(recurso) {
     try {
-      const res = await fetch(`${API_URL}/api/admin/recursos/${recurso._id}/url`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/recursos/${recurso._id}/url`, { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         if (data.url) {
           window.open(data.url, '_blank');
           // Registrar visualización
-          await fetch(`${API_URL}/api/recursos/${recurso._id}/registrar-uso`, {
+          await fetchAPI(`/api/recursos/${recurso._id}/registrar-uso`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ accion: 'visualizacion' })
@@ -1749,13 +1881,13 @@
 
   async function descargarRecurso(recurso) {
     try {
-      const res = await fetch(`${API_URL}/api/admin/recursos/${recurso._id}/url`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/admin/recursos/${recurso._id}/url`, { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         if (data.url) {
           window.open(data.url, '_blank');
           // Registrar descarga
-          await fetch(`${API_URL}/api/recursos/${recurso._id}/registrar-uso`, {
+          await fetchAPI(`/api/recursos/${recurso._id}/registrar-uso`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ accion: 'descarga' })
@@ -1772,7 +1904,7 @@
       const params = new URLSearchParams();
       if (materiaSeleccionadaRecursos) params.append('materia', materiaSeleccionadaRecursos);
       
-      const res = await fetch(`${API_URL}/api/recursos/recomendaciones?${params.toString()}`, { headers: getAuthHeaders() });
+      const res = await fetchAPI(`/api/recursos/recomendaciones?${params.toString()}`, { headers: getAuthHeaders() });
       if (res.ok) {
         recomendacionesRecursos = await res.json();
       }
@@ -1835,6 +1967,12 @@
             on:click={() => activeTab = 'planes'}
           >
             💰 Planes
+          </button>
+          <button
+            class:active={activeTab === 'cobros'}
+            on:click={() => { activeTab = 'cobros'; loadConceptosCobro(); loadEstadoCuentaCobros(); loadCobrosResumen(); }}
+          >
+            💳 Cobros
           </button>
           <button
             class:active={activeTab === 'informacion'}
@@ -2209,6 +2347,111 @@
                   <button on:click={() => deletePlan(p._id)}>🗑️</button>
                 </div>
               </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
+
+      {#if activeTab === 'cobros'}
+        <div class="section">
+          <h2>💳 Cobros y Estado de Cuenta</h2>
+
+          {#if resumenCobros}
+            <div class="stats-overview">
+              <div class="stat-card">
+                <div class="stat-value">${resumenCobros.totalFacturado?.toFixed(2) || '0.00'}</div>
+                <div class="stat-label">Facturado</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value">${resumenCobros.totalCobrado?.toFixed(2) || '0.00'}</div>
+                <div class="stat-label">Cobrado</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value">${resumenCobros.totalPendiente?.toFixed(2) || '0.00'}</div>
+                <div class="stat-label">Pendiente</div>
+              </div>
+            </div>
+          {/if}
+
+          <div class="form-row">
+            <form on:submit|preventDefault={saveConceptoCobro} class="form">
+              <h3>Nuevo concepto de cobro</h3>
+              <input bind:value={newConceptoCobro.nombre} placeholder="Nombre (ej. Colegiatura)" required />
+              <textarea bind:value={newConceptoCobro.descripcion} placeholder="Descripción"></textarea>
+              <input type="number" min="0" step="0.01" bind:value={newConceptoCobro.monto} placeholder="Monto" required />
+              <select bind:value={newConceptoCobro.frecuencia}>
+                <option value="mensual">Mensual</option>
+                <option value="bimestral">Bimestral</option>
+                <option value="anual">Anual</option>
+                <option value="unico">Único</option>
+              </select>
+              <button type="submit">Guardar concepto</button>
+            </form>
+
+            <form on:submit|preventDefault={generarCargoCobro} class="form">
+              <h3>Generar cargos</h3>
+              <select bind:value={newCargoCobro.conceptoId} required>
+                <option value="">Selecciona concepto</option>
+                {#each conceptosCobro as concepto}
+                  <option value={concepto._id}>{concepto.nombre} - ${concepto.monto}</option>
+                {/each}
+              </select>
+              <select bind:value={newCargoCobro.alumnoId}>
+                <option value="">Selecciona alumno (opcional)</option>
+                {#each alumnos as a}
+                  <option value={a._id}>{a.nombre}</option>
+                {/each}
+              </select>
+              <select bind:value={newCargoCobro.grupoId}>
+                <option value="">Selecciona grupo (opcional)</option>
+                {#each grupos as g}
+                  <option value={g._id}>{g.nombre}</option>
+                {/each}
+              </select>
+              <input type="date" bind:value={newCargoCobro.fechaLimite} />
+              <input bind:value={newCargoCobro.observaciones} placeholder="Observaciones" />
+              <button type="submit">Generar cargos</button>
+            </form>
+          </div>
+
+          <form on:submit|preventDefault={registrarPagoCobro} class="form">
+            <h3>Registrar pago manual</h3>
+            <div class="form-row">
+              <select bind:value={pagoCobro.cargoId} required>
+                <option value="">Selecciona cargo</option>
+                {#each estadoCuentaCobros.filter(c => c.estado !== 'pagado') as cargo}
+                  <option value={cargo._id}>{cargo.alumno?.nombre || 'Alumno'} - {cargo.conceptoNombre} (${cargo.saldoPendiente})</option>
+                {/each}
+              </select>
+              <input type="number" min="0" step="0.01" bind:value={pagoCobro.monto} placeholder="Monto" required />
+              <select bind:value={pagoCobro.metodo}>
+                <option value="efectivo">Efectivo</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="tarjeta">Tarjeta</option>
+              </select>
+              <input bind:value={pagoCobro.referencia} placeholder="Referencia" />
+              <button type="submit">Registrar pago</button>
+            </div>
+          </form>
+
+          <div class="list">
+            <h3>Estado de cuenta</h3>
+            {#each estadoCuentaCobros as cargo}
+              <div class="item">
+                <div>
+                  <strong>{cargo.alumno?.nombre || 'Alumno'}</strong>
+                  <p>{cargo.conceptoNombre}</p>
+                  <small>Monto: ${cargo.monto} | Pendiente: ${cargo.saldoPendiente}</small>
+                  <small>Vence: {new Date(cargo.fechaLimite).toLocaleDateString('es-ES')} | Estado: {cargo.estado}</small>
+                </div>
+                <div class="actions">
+                  {#if cargo.estado !== 'pagado'}
+                    <button on:click={() => enviarRecordatorioCobro(cargo._id)}>🔔 Recordatorio</button>
+                  {/if}
+                </div>
+              </div>
+            {:else}
+              <p class="empty-state">No hay cargos registrados</p>
             {/each}
           </div>
         </div>

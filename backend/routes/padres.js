@@ -3,12 +3,9 @@ import { ObjectId } from 'mongodb';
 import { getDB } from '../utils/db.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { getJwtSecret } from '../utils/auth.js';
 
 const router = express.Router();
-
-function getJwtSecret() {
-  return process.env.JWT_SECRET || '';
-}
 
 // POST - Login de padre
 router.post('/api/padres/login', async (req, res) => {

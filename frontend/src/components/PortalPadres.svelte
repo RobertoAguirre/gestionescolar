@@ -10,6 +10,8 @@
   let progreso = null;
   let eventos = [];
   let citas = [];
+  let pagosEstadoCuenta = [];
+  let pagosResumen = null;
   let historial = [];
   let activeTab = 'dashboard';
   
@@ -19,6 +21,7 @@
   
   let showCitaForm = false;
   let newCita = { motivo: '', fecha: '', tipo: 'directivo', maestroId: '' };
+  let cargoPagoSeleccionado = '';
   let maestros = [];
 
   onMount(() => {
@@ -125,6 +128,7 @@
       cargarProgreso(),
       cargarEventos(),
       cargarCitas(),
+      cargarPagosEstadoCuenta(),
       cargarHistorial(),
       cargarMaestros()
     ]);
@@ -194,6 +198,45 @@
       }
     } catch (error) {
       console.error('Error cargando historial:', error);
+    }
+  }
+
+  async function cargarPagosEstadoCuenta() {
+    try {
+      const res = await fetchAPI('/api/padres/pagos/estado-cuenta', {
+        headers: getAuthHeaders()
+      });
+      if (res.ok) {
+        const data = await res.json();
+        pagosResumen = data.resumen || null;
+        pagosEstadoCuenta = data.cargos || [];
+      }
+    } catch (error) {
+      console.error('Error cargando estado de cuenta:', error);
+    }
+  }
+
+  async function crearIntencionPago() {
+    if (!cargoPagoSeleccionado) {
+      alert('Selecciona un cargo');
+      return;
+    }
+    try {
+      const res = await fetchAPI('/api/padres/pagos/intencion', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ cargoId: cargoPagoSeleccionado, metodo: 'transferencia' })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Error iniciando pago');
+        return;
+      }
+      alert(data.message || 'Intención de pago registrada');
+      cargoPagoSeleccionado = '';
+      await cargarPagosEstadoCuenta();
+    } catch (error) {
+      alert('Error iniciando pago');
     }
   }
 
@@ -320,6 +363,12 @@
         on:click={() => activeTab = 'citas'}
       >
         📋 Citas
+      </button>
+      <button
+        class:active={activeTab === 'pagos'}
+        on:click={() => { activeTab = 'pagos'; cargarPagosEstadoCuenta(); }}
+      >
+        💳 Pagos
       </button>
       <button
         class:active={activeTab === 'historial'}
@@ -536,6 +585,61 @@
           {:else}
             <p class="empty-state">No hay citas agendadas</p>
           {/if}
+        </div>
+      {/if}
+
+      {#if activeTab === 'pagos'}
+        <div class="section">
+          <h2>💳 Estado de Cuenta y Pagos</h2>
+
+          {#if pagosResumen}
+            <div class="dashboard-grid">
+              <div class="dashboard-card">
+                <h3>Total Facturado</h3>
+                <div class="dashboard-value">${pagosResumen.totalFacturado?.toFixed(2) || '0.00'}</div>
+              </div>
+              <div class="dashboard-card">
+                <h3>Total Pagado</h3>
+                <div class="dashboard-value">${pagosResumen.totalPagado?.toFixed(2) || '0.00'}</div>
+              </div>
+              <div class="dashboard-card">
+                <h3>Total Pendiente</h3>
+                <div class="dashboard-value">${pagosResumen.totalPendiente?.toFixed(2) || '0.00'}</div>
+              </div>
+            </div>
+          {/if}
+
+          <div class="cita-form">
+            <h3>Iniciar pago</h3>
+            <form on:submit|preventDefault={crearIntencionPago}>
+              <select bind:value={cargoPagoSeleccionado} required>
+                <option value="">Selecciona cargo pendiente</option>
+                {#each pagosEstadoCuenta.filter(c => c.estado !== 'pagado') as cargo}
+                  <option value={cargo._id}>
+                    {cargo.conceptoNombre} - ${cargo.saldoPendiente} (vence {new Date(cargo.fechaLimite).toLocaleDateString('es-ES')})
+                  </option>
+                {/each}
+              </select>
+              <button type="submit">Solicitar pago</button>
+            </form>
+            <small>Cuando Stripe esté configurado, este flujo abrirá checkout automático.</small>
+          </div>
+
+          <div class="citas-list">
+            {#each pagosEstadoCuenta as cargo}
+              <div class="cita-item">
+                <div class="cita-header">
+                  <strong>{cargo.conceptoNombre}</strong>
+                  <span class={`badge badge-${cargo.estado}`}>{cargo.estado}</span>
+                </div>
+                <p>Monto: ${cargo.monto}</p>
+                <p>Pendiente: ${cargo.saldoPendiente}</p>
+                <p>Fecha límite: {new Date(cargo.fechaLimite).toLocaleDateString('es-ES')}</p>
+              </div>
+            {:else}
+              <p class="empty-state">No hay cargos registrados.</p>
+            {/each}
+          </div>
         </div>
       {/if}
 

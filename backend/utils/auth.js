@@ -15,7 +15,7 @@ function getBearerToken(req) {
   return authHeader.slice(7).trim();
 }
 
-function getJwtSecret() {
+export function getJwtSecret() {
   return process.env.JWT_SECRET || '';
 }
 
@@ -140,3 +140,13 @@ export const adminAuth = async (req, res, next) => {
     return res.status(500).json({ error: 'Error en autenticación' });
   }
 };
+
+/** Solo JWT con rol super_admin (rutas /api/super-admin/*) */
+export function requireSuperAdmin(req, res, next) {
+  adminAuth(req, res, () => {
+    if (!req.isSuperAdmin) {
+      return res.status(403).json({ error: 'Solo super administradores pueden acceder' });
+    }
+    return next();
+  });
+}
