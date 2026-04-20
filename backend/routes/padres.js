@@ -1,9 +1,11 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
+import { randomInt } from 'crypto';
 import { getDB } from '../utils/db.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { getJwtSecret } from '../utils/auth.js';
+import { adminAuth, getJwtSecret } from '../utils/auth.js';
+import { addEscuelaFilter, getEscuelaId } from '../utils/multi-escuela.js';
 
 const router = express.Router();
 
@@ -14,6 +16,17 @@ function alumnoIdFilter(alumnoId) {
       { alumnoId: String(alumnoId) }
     ]
   };
+}
+
+async function getAlumnoPadreContext(req) {
+  const db = getDB();
+  const alumno = await db.collection('alumnos').findOne({ _id: req.alumnoId });
+  if (!alumno) return null;
+  const padre = Array.isArray(alumno.padres)
+    ? alumno.padres.find((p) => p.email === req.padreId)
+    : null;
+  if (!padre) return null;
+  return { db, alumno, padre };
 }
 
 // POST - Login de padre
@@ -406,6 +419,200 @@ router.post('/api/padres/citas', authPadre, async (req, res) => {
   } catch (error) {
     console.error('Error agendando cita:', error);
     res.status(500).json({ error: 'Error agendando cita' });
+  }
+});
+
+// Pickup Seguro (piloto)
+router.get('/api/padres/pickup/estado', authPadre, async (req, res) => {
+  try {
+    const db = getDB();
+    const escuelaId = getEscuelaId(req);
+    let query = {
+      padreEmail: req.padreId,
+      ...alumnoIdFilter(req.alumnoId)
+    };
+    query = addEscuelaFilter(query, escuelaId);
+
+    const ultimaSolicitud = await db.collection('pickup_solicitudes')
+      .find(query)
+      .sort({ createdAt: -1 })
+      .limit(1)
+      .next();
+
+    if (!ultimaSolicitud) {
+      return res.json({ activa: false, solicitud: null });
+    }
+
+    const expirada =
+      ultimaSolicitud.estado === 'pendiente' &&
+      new Date(ultimaSolicitud.expiresAt).getTime() <= Date.now();
+
+    if (expirada) {
+      await db.collection('pickup_solicitudes').updateOne(
+        { _id: ultimaSolicitud._id, estado: 'pendiente' },
+        { $set: { estado: 'expirada', updatedAt: new Date() } }
+      );
+      ultimaSolicitud.estado = 'expirada';
+    }
+
+    const activa = ultimaSolicitud.estado === 'pendiente';
+    return res.json({
+      activa,
+      solicitud: {
+        id: ultimaSolicitud._id,
+        estado: ultimaSolicitud.estado,
+        codigo: activa ? ultimaSolicitud.codigo : null,
+        createdAt: ultimaSolicitud.createdAt,
+        expiresAt: ultimaSolicitud.expiresAt,
+        nota: ultimaSolicitud.nota || ''
+      }
+    });
+  } catch (error) {
+    console.error('Error consultando estado pickup:', error);
+    return res.status(500).json({ error: 'Error consultando pickup seguro' });
+  }
+});
+
+router.post('/api/padres/pickup/solicitar', authPadre, async (req, res) => {
+  try {
+    const { nota = '' } = req.body || {};
+    const context = await getAlumnoPadreContext(req);
+    if (!context) {
+      return res.status(404).json({ error: 'Alumno o tutor autorizado no encontrado' });
+    }
+
+    const { db, alumno, padre } = context;
+    const escuelaId = getEscuelaId(req);
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 10 * 60 * 1000);
+    const codigo = String(randomInt(100000, 1000000));
+
+    // Invalida cualquier solicitud pendiente previa del mismo padre/alumno.
+    await db.collection('pickup_solicitudes').updateMany(
+      addEscuelaFilter({
+        padreEmail: req.padreId,
+        ...alumnoIdFilter(req.alumnoId),
+        estado: 'pendiente'
+      }, escuelaId),
+      { $set: { estado: 'reemplazada', updatedAt: now } }
+    );
+
+    const solicitud = {
+      alumnoId: req.alumnoId,
+      alumnoNombre: alumno.nombre || 'Alumno',
+      padreEmail: req.padreId,
+      padreNombre: padre.nombre || req.padreId,
+      codigo,
+      estado: 'pendiente',
+      nota: String(nota || '').trim(),
+      createdAt: now,
+      expiresAt: expiresAt,
+      updatedAt: now
+    };
+    if (alumno.escuelaId) solicitud.escuelaId = alumno.escuelaId;
+
+    const result = await db.collection('pickup_solicitudes').insertOne(solicitud);
+
+    return res.json({
+      success: true,
+      solicitud: {
+        id: result.insertedId,
+        codigo,
+        expiresAt,
+        estado: 'pendiente'
+      },
+      instrucciones: 'Muestra este codigo en recepcion para validar la entrega segura.'
+    });
+  } catch (error) {
+    console.error('Error creando solicitud pickup:', error);
+    return res.status(500).json({ error: 'Error creando solicitud de pickup' });
+  }
+});
+
+router.post('/api/admin/pickup/verificar', adminAuth, async (req, res) => {
+  try {
+    const { codigo } = req.body || {};
+    if (!codigo || String(codigo).trim().length < 6) {
+      return res.status(400).json({ error: 'Codigo requerido' });
+    }
+
+    const db = getDB();
+    const escuelaId = req.escuelaId || getEscuelaId(req);
+    const now = new Date();
+    let query = {
+      codigo: String(codigo).trim(),
+      estado: 'pendiente',
+      expiresAt: { $gt: now }
+    };
+    query = addEscuelaFilter(query, escuelaId);
+
+    const solicitud = await db.collection('pickup_solicitudes').findOne(query);
+    if (!solicitud) {
+      return res.status(404).json({ error: 'Codigo invalido o expirado' });
+    }
+
+    return res.json({
+      success: true,
+      solicitud: {
+        id: solicitud._id,
+        alumnoId: solicitud.alumnoId,
+        alumnoNombre: solicitud.alumnoNombre,
+        padreNombre: solicitud.padreNombre,
+        padreEmail: solicitud.padreEmail,
+        nota: solicitud.nota || '',
+        createdAt: solicitud.createdAt,
+        expiresAt: solicitud.expiresAt,
+        estado: solicitud.estado
+      }
+    });
+  } catch (error) {
+    console.error('Error verificando pickup:', error);
+    return res.status(500).json({ error: 'Error verificando pickup' });
+  }
+});
+
+router.post('/api/admin/pickup/completar', adminAuth, async (req, res) => {
+  try {
+    const { solicitudId, observaciones = '' } = req.body || {};
+    if (!ObjectId.isValid(solicitudId)) {
+      return res.status(400).json({ error: 'solicitudId invalido' });
+    }
+
+    const db = getDB();
+    const escuelaId = req.escuelaId || getEscuelaId(req);
+    let query = { _id: new ObjectId(solicitudId), estado: 'pendiente' };
+    query = addEscuelaFilter(query, escuelaId);
+
+    const solicitud = await db.collection('pickup_solicitudes').findOne(query);
+    if (!solicitud) {
+      return res.status(404).json({ error: 'Solicitud no encontrada o ya cerrada' });
+    }
+    if (new Date(solicitud.expiresAt).getTime() <= Date.now()) {
+      await db.collection('pickup_solicitudes').updateOne(
+        { _id: solicitud._id },
+        { $set: { estado: 'expirada', updatedAt: new Date() } }
+      );
+      return res.status(400).json({ error: 'Solicitud expirada' });
+    }
+
+    const now = new Date();
+    await db.collection('pickup_solicitudes').updateOne(
+      { _id: solicitud._id },
+      {
+        $set: {
+          estado: 'completada',
+          completadaAt: now,
+          completadaPor: req.rol || 'admin_escuela',
+          observaciones: String(observaciones || '').trim(),
+          updatedAt: now
+        }
+      }
+    );
+
+    return res.json({ success: true, estado: 'completada', completadaAt: now });
+  } catch (error) {
+    console.error('Error completando pickup:', error);
+    return res.status(500).json({ error: 'Error completando pickup' });
   }
 });
 

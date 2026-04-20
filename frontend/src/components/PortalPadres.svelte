@@ -13,6 +13,9 @@
   let pagosEstadoCuenta = [];
   let pagosResumen = null;
   let historial = [];
+  let pickupEstado = null;
+  let pickupNota = '';
+  let pickupLoading = false;
   let activeTab = 'dashboard';
   
   let loginEmail = '';
@@ -113,6 +116,8 @@
     eventos = [];
     citas = [];
     historial = [];
+    pickupEstado = null;
+    pickupNota = '';
   }
 
   function getAuthHeaders() {
@@ -130,8 +135,46 @@
       cargarCitas(),
       cargarPagosEstadoCuenta(),
       cargarHistorial(),
-      cargarMaestros()
+      cargarMaestros(),
+      cargarPickupEstado()
     ]);
+  }
+
+  async function cargarPickupEstado() {
+    try {
+      const res = await fetchAPI('/api/padres/pickup/estado', {
+        headers: getAuthHeaders()
+      });
+      if (res.ok) {
+        const data = await res.json();
+        pickupEstado = data?.solicitud || null;
+      }
+    } catch (error) {
+      console.error('Error cargando pickup seguro:', error);
+    }
+  }
+
+  async function solicitarPickup() {
+    pickupLoading = true;
+    try {
+      const res = await fetchAPI('/api/padres/pickup/solicitar', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ nota: pickupNota })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Error solicitando pickup');
+        return;
+      }
+      pickupEstado = data.solicitud || null;
+      pickupNota = '';
+      alert('Solicitud de pickup creada. Muestra el codigo en recepcion.');
+    } catch (error) {
+      alert('Error solicitando pickup');
+    } finally {
+      pickupLoading = false;
+    }
   }
 
   async function cargarCalificaciones() {
@@ -375,6 +418,12 @@
         on:click={() => activeTab = 'historial'}
       >
         📜 Historial
+      </button>
+      <button
+        class:active={activeTab === 'pickup'}
+        on:click={() => { activeTab = 'pickup'; cargarPickupEstado(); }}
+      >
+        🚗 Pickup Seguro
       </button>
     </div>
 
@@ -681,6 +730,36 @@
           {:else}
             <p class="empty-state">No hay historial de interacciones</p>
           {/if}
+        </div>
+      {/if}
+
+      {#if activeTab === 'pickup'}
+        <div class="section">
+          <h2>🚗 Pickup Seguro (Piloto)</h2>
+          <p class="pickup-help">
+            Genera un codigo temporal para avisar que vienes por tu hijo y validarlo en recepcion.
+          </p>
+
+          {#if pickupEstado && pickupEstado.estado === 'pendiente'}
+            <div class="pickup-card">
+              <h3>Codigo activo</h3>
+              <div class="pickup-code">{pickupEstado.codigo}</div>
+              <p>Expira: {new Date(pickupEstado.expiresAt).toLocaleString('es-ES')}</p>
+            </div>
+          {:else if pickupEstado}
+            <p class="pickup-status">Ultimo estado: {pickupEstado.estado}</p>
+          {/if}
+
+          <div class="cita-form">
+            <h3>Nueva solicitud</h3>
+            <textarea
+              bind:value={pickupNota}
+              placeholder="Nota opcional (ej. llego en 10 min, estare en puerta principal)"
+            ></textarea>
+            <button on:click={solicitarPickup} disabled={pickupLoading}>
+              {pickupLoading ? 'Generando...' : 'Generar codigo de pickup'}
+            </button>
+          </div>
         </div>
       {/if}
     </div>
@@ -1162,5 +1241,32 @@
     padding: 40px;
     color: #6c757d;
     font-style: italic;
+  }
+
+  .pickup-help {
+    margin-bottom: 15px;
+    color: #495057;
+  }
+
+  .pickup-card {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 18px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .pickup-code {
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    margin: 8px 0;
+    color: #343a40;
+  }
+
+  .pickup-status {
+    margin-bottom: 15px;
+    color: #6c757d;
   }
 </style>
