@@ -27,6 +27,7 @@ import reportesRoutes from './routes/reportes.js';
 import tareasRoutes from './routes/tareas.js';
 import recursosRoutes from './routes/recursos.js';
 import cobrosRoutes from './routes/cobros.js';
+import importacionRoutes from './routes/importacion.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -61,6 +62,7 @@ app.use(reportesRoutes);
 app.use(tareasRoutes);
 app.use(recursosRoutes);
 app.use(cobrosRoutes);
+app.use(importacionRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

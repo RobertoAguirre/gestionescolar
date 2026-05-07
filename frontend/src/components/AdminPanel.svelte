@@ -194,11 +194,18 @@
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${authToken}`
     };
-    
+
     if (escuelaId) {
       headers['X-Escuela-Id'] = escuelaId;
     }
-    
+
+    return headers;
+  }
+
+  /** Headers para FormData: sin Content-Type para que el navegador ponga el boundary. */
+  function uploadAuthHeaders() {
+    const headers = { Authorization: `Bearer ${authToken}` };
+    if (escuelaId) headers['X-Escuela-Id'] = escuelaId;
     return headers;
   }
 
@@ -613,6 +620,34 @@
     }
   }
 
+  async function importarMaestrosExcel(ev) {
+    const file = ev.target?.files?.[0];
+    ev.target.value = '';
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('archivo', file);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/import/maestros`, {
+        method: 'POST',
+        headers: uploadAuthHeaders(),
+        body: fd
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Error al importar');
+      const ins = data.insertados ?? 0;
+      const act = data.actualizados ?? 0;
+      const nErr = (data.errores && data.errores.length) || 0;
+      let msg = `Listo: ${ins} nuevos, ${act} actualizados.`;
+      if (nErr) msg += ` ${nErr} fila(s) con aviso (revisa consola).`;
+      alert(msg);
+      if (nErr && data.errores) console.warn('Import maestros:', data.errores);
+      await loadMaestros();
+      await loadStats();
+    } catch (e) {
+      alert(e.message || 'Error al importar');
+    }
+  }
+
   // Alumnos
   async function loadAlumnos() {
     try {
@@ -720,6 +755,34 @@
       await loadStats();
     } catch (error) {
       alert('Error eliminando alumno');
+    }
+  }
+
+  async function importarAlumnosExcel(ev) {
+    const file = ev.target?.files?.[0];
+    ev.target.value = '';
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('archivo', file);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/import/alumnos`, {
+        method: 'POST',
+        headers: uploadAuthHeaders(),
+        body: fd
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Error al importar');
+      const ins = data.insertados ?? 0;
+      const act = data.actualizados ?? 0;
+      const nErr = (data.errores && data.errores.length) || 0;
+      let msg = `Listo: ${ins} nuevos, ${act} actualizados.`;
+      if (nErr) msg += ` ${nErr} fila(s) con aviso (revisa consola).`;
+      alert(msg);
+      if (nErr && data.errores) console.warn('Import alumnos:', data.errores);
+      await loadAlumnos();
+      await loadStats();
+    } catch (e) {
+      alert(e.message || 'Error al importar');
     }
   }
 
@@ -2566,6 +2629,13 @@
       {#if activeTab === 'maestros'}
         <div class="section">
           <h2>Gestionar Maestros</h2>
+          <div class="import-excel-bar">
+            <label class="import-excel-label">
+              📥 Importar Excel
+              <input type="file" accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" on:change={importarMaestrosExcel} />
+            </label>
+            <small>Plantilla tipo «Docentes preescolar»: nombre, apellidopaterno, apellidomaterno, iddepartamento, idpuesto, Grado. Opcional email y teléfono.</small>
+          </div>
           <div class="search-box">
             <input 
               type="text" 
@@ -2618,6 +2688,13 @@
       {#if activeTab === 'alumnos'}
         <div class="section">
           <h2>Gestionar Alumnos</h2>
+          <div class="import-excel-bar">
+            <label class="import-excel-label">
+              📥 Importar Excel
+              <input type="file" accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" on:change={importarAlumnosExcel} />
+            </label>
+            <small>Plantilla «Información Personal Alumno»: NomAlumno, Grupo (igual que en sistema), EmailHijo, Teléfono; padres desde EmailTutor/NombreTutor, EmailMama/NomMama, EmailPapa/NomPapa.</small>
+          </div>
           <div class="search-box">
             <input 
               type="text" 
@@ -5432,6 +5509,42 @@
   .dashboard-recent h3 {
     margin: 0 0 20px 0;
     color: #333;
+  }
+
+  .import-excel-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    background: #f8f9fc;
+    border-radius: 8px;
+    border: 1px solid #e8eaf0;
+  }
+
+  .import-excel-bar small {
+    flex: 1;
+    min-width: 200px;
+    color: #666;
+    line-height: 1.4;
+  }
+
+  .import-excel-label {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 14px;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #444;
+    flex-shrink: 0;
+  }
+
+  .import-excel-label input[type='file'] {
+    display: none;
   }
 
   .search-box {
