@@ -25,6 +25,14 @@
     }
   };
   let authToken = '';
+  let archivoMaestrosSeleccionado = null;
+  let importandoMaestros = false;
+  let mensajeImportMaestros = '';
+  let errorImportMaestros = '';
+  let archivoAlumnosSeleccionado = null;
+  let importandoAlumnos = false;
+  let mensajeImportAlumnos = '';
+  let errorImportAlumnos = '';
   
   // Búsquedas y filtros
   let searchMaestros = '';
@@ -620,12 +628,23 @@
     }
   }
 
-  async function importarMaestrosExcel(ev) {
-    const file = ev.target?.files?.[0];
-    ev.target.value = '';
-    if (!file) return;
+  function seleccionarArchivoMaestros(ev) {
+    const file = ev.target?.files?.[0] || null;
+    archivoMaestrosSeleccionado = file;
+    mensajeImportMaestros = '';
+    errorImportMaestros = '';
+  }
+
+  async function importarMaestrosExcel() {
+    if (!archivoMaestrosSeleccionado) {
+      errorImportMaestros = 'Selecciona un archivo Excel antes de importar.';
+      return;
+    }
+    importandoMaestros = true;
+    mensajeImportMaestros = '';
+    errorImportMaestros = '';
     const fd = new FormData();
-    fd.append('archivo', file);
+    fd.append('archivo', archivoMaestrosSeleccionado);
     try {
       const res = await fetch(`${API_URL}/api/admin/import/maestros`, {
         method: 'POST',
@@ -637,14 +656,16 @@
       const ins = data.insertados ?? 0;
       const act = data.actualizados ?? 0;
       const nErr = (data.errores && data.errores.length) || 0;
-      let msg = `Listo: ${ins} nuevos, ${act} actualizados.`;
-      if (nErr) msg += ` ${nErr} fila(s) con aviso (revisa consola).`;
-      alert(msg);
+      mensajeImportMaestros = `Listo: ${ins} nuevos, ${act} actualizados.`;
+      if (nErr) mensajeImportMaestros += ` ${nErr} fila(s) con aviso (revisa consola).`;
       if (nErr && data.errores) console.warn('Import maestros:', data.errores);
+      archivoMaestrosSeleccionado = null;
       await loadMaestros();
       await loadStats();
     } catch (e) {
-      alert(e.message || 'Error al importar');
+      errorImportMaestros = e.message || 'Error al importar';
+    } finally {
+      importandoMaestros = false;
     }
   }
 
@@ -758,12 +779,23 @@
     }
   }
 
-  async function importarAlumnosExcel(ev) {
-    const file = ev.target?.files?.[0];
-    ev.target.value = '';
-    if (!file) return;
+  function seleccionarArchivoAlumnos(ev) {
+    const file = ev.target?.files?.[0] || null;
+    archivoAlumnosSeleccionado = file;
+    mensajeImportAlumnos = '';
+    errorImportAlumnos = '';
+  }
+
+  async function importarAlumnosExcel() {
+    if (!archivoAlumnosSeleccionado) {
+      errorImportAlumnos = 'Selecciona un archivo Excel antes de importar.';
+      return;
+    }
+    importandoAlumnos = true;
+    mensajeImportAlumnos = '';
+    errorImportAlumnos = '';
     const fd = new FormData();
-    fd.append('archivo', file);
+    fd.append('archivo', archivoAlumnosSeleccionado);
     try {
       const res = await fetch(`${API_URL}/api/admin/import/alumnos`, {
         method: 'POST',
@@ -775,14 +807,16 @@
       const ins = data.insertados ?? 0;
       const act = data.actualizados ?? 0;
       const nErr = (data.errores && data.errores.length) || 0;
-      let msg = `Listo: ${ins} nuevos, ${act} actualizados.`;
-      if (nErr) msg += ` ${nErr} fila(s) con aviso (revisa consola).`;
-      alert(msg);
+      mensajeImportAlumnos = `Listo: ${ins} nuevos, ${act} actualizados.`;
+      if (nErr) mensajeImportAlumnos += ` ${nErr} fila(s) con aviso (revisa consola).`;
       if (nErr && data.errores) console.warn('Import alumnos:', data.errores);
+      archivoAlumnosSeleccionado = null;
       await loadAlumnos();
       await loadStats();
     } catch (e) {
-      alert(e.message || 'Error al importar');
+      errorImportAlumnos = e.message || 'Error al importar';
+    } finally {
+      importandoAlumnos = false;
     }
   }
 
@@ -2631,10 +2665,27 @@
           <h2>Gestionar Maestros</h2>
           <div class="import-excel-bar">
             <label class="import-excel-label">
-              📥 Importar Excel
-              <input type="file" accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" on:change={importarMaestrosExcel} />
+              📁 Seleccionar Excel
+              <input type="file" accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" on:change={seleccionarArchivoMaestros} />
             </label>
+            <button
+              type="button"
+              class="import-excel-action"
+              disabled={!archivoMaestrosSeleccionado || importandoMaestros}
+              on:click={importarMaestrosExcel}
+            >
+              {importandoMaestros ? 'Importando...' : 'Importar datos'}
+            </button>
+            <span class="import-excel-file">
+              {archivoMaestrosSeleccionado ? archivoMaestrosSeleccionado.name : 'Sin archivo seleccionado'}
+            </span>
             <small>Plantilla tipo «Docentes preescolar»: nombre, apellidopaterno, apellidomaterno, iddepartamento, idpuesto, Grado. Opcional email y teléfono.</small>
+            {#if mensajeImportMaestros}
+              <div class="import-excel-status import-excel-status--ok">{mensajeImportMaestros}</div>
+            {/if}
+            {#if errorImportMaestros}
+              <div class="import-excel-status import-excel-status--error">{errorImportMaestros}</div>
+            {/if}
           </div>
           <div class="search-box">
             <input 
@@ -2690,10 +2741,27 @@
           <h2>Gestionar Alumnos</h2>
           <div class="import-excel-bar">
             <label class="import-excel-label">
-              📥 Importar Excel
-              <input type="file" accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" on:change={importarAlumnosExcel} />
+              📁 Seleccionar Excel
+              <input type="file" accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" on:change={seleccionarArchivoAlumnos} />
             </label>
+            <button
+              type="button"
+              class="import-excel-action"
+              disabled={!archivoAlumnosSeleccionado || importandoAlumnos}
+              on:click={importarAlumnosExcel}
+            >
+              {importandoAlumnos ? 'Importando...' : 'Importar datos'}
+            </button>
+            <span class="import-excel-file">
+              {archivoAlumnosSeleccionado ? archivoAlumnosSeleccionado.name : 'Sin archivo seleccionado'}
+            </span>
             <small>Plantilla «Información Personal Alumno»: NomAlumno, Grupo (igual que en sistema), EmailHijo, Teléfono; padres desde EmailTutor/NombreTutor, EmailMama/NomMama, EmailPapa/NomPapa.</small>
+            {#if mensajeImportAlumnos}
+              <div class="import-excel-status import-excel-status--ok">{mensajeImportAlumnos}</div>
+            {/if}
+            {#if errorImportAlumnos}
+              <div class="import-excel-status import-excel-status--error">{errorImportAlumnos}</div>
+            {/if}
           </div>
           <div class="search-box">
             <input 
@@ -5545,6 +5613,52 @@
 
   .import-excel-label input[type='file'] {
     display: none;
+  }
+
+  .import-excel-action {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    background: #667eea;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .import-excel-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .import-excel-file {
+    color: #444;
+    font-size: 13px;
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .import-excel-status {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .import-excel-status--ok {
+    background: #eaf9ef;
+    color: #1b7a3c;
+    border: 1px solid #b9e6c8;
+  }
+
+  .import-excel-status--error {
+    background: #fff2f2;
+    color: #a12828;
+    border: 1px solid #f3b9b9;
   }
 
   .search-box {
